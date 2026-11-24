@@ -189,14 +189,11 @@ export default function GarraSorteo() {
 
   const cargarParticipantesActivos = async () => {
     try {
-      const { data, count, error: dbError } = await supabase
-        .from('participantes')
-        .select('*', { count: 'exact' })
-        .eq('ganador', false)
-        .eq('es_valido', true)
-        .limit(140);
-
-      if (dbError) throw dbError;
+      const { data, error: dbError } = await supabase.rpc('obtener_avatares_urna');
+      if (!dbError && data) {
+        setTotalEnUrna(data.total ?? 0);
+        procesarPeluchesReales(data.avatares || []);
+      }
 
       setTotalEnUrna(count ?? 0);
       if (data && data.length > 0) {
