@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import FingerprintJS from '@fingerprintjs/fingerprintjs';
-import { ShieldAlert, Loader2, User, Hash } from 'lucide-react';
+import { ShieldAlert, Loader2, User, Hash, Ticket } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 const COLORES = [
@@ -125,8 +125,12 @@ export function MonoPixelArt({ color = '#e11d48', accesorio = 'santa', expresion
 }
 
 export default function RegistroQR() {
-  const [nombre, setNombre] = useState('');
+  const [nombres, setNombres] = useState('');
+  const [apellidoPaterno, setApellidoPaterno] = useState('');
+  const [apellidoMaterno, setApellidoMaterno] = useState('');
   const [numeroEmpleado, setNumeroEmpleado] = useState('');
+  const [folioBrazalete, setFolioBrazalete] = useState('');
+
   const [colorSkin, setColorSkin] = useState(COLORES[0].hex);
   const [accesorio, setAccesorio] = useState(ACCESORIOS[0].id);
   const [expresion, setExpresion] = useState(EXPRESIONES[0].id);
@@ -151,27 +155,20 @@ export default function RegistroQR() {
     initFp();
   }, []);
 
-  useEffect(() => {
-  if (!mostrarBannerGanador) return;
-  const timer = setTimeout(() => {
-    setMostrarBannerGanador(false);
-  }, 6000); // 6000 ms = 6 segundos visible
-  return () => clearTimeout(timer);
-}, [mostrarBannerGanador, ganador]);
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    const nombreLimpio = nombre.trim();
-    const empLimpio = numeroEmpleado.trim().replace(/[\s\-]/g, '').toUpperCase();
-
-    if (nombreLimpio.split(/\s+/).length < 2) {
-      setError('Escribe tu nombre completo (Nombre y Apellidos).');
+    if (!nombres.trim() || !apellidoPaterno.trim() || !apellidoMaterno.trim()) {
+      setError('Completa tu Nombre(s), Apellido Paterno y Apellido Materno.');
       return;
     }
-    if (!empLimpio) {
+    if (!numeroEmpleado.trim()) {
       setError('Ingresa tu número de empleado.');
+      return;
+    }
+    if (!folioBrazalete.trim()) {
+      setError('Ingresa el folio de tu brazalete.');
       return;
     }
 
@@ -179,14 +176,17 @@ export default function RegistroQR() {
 
     try {
       const { error: rpcError } = await supabase.rpc('registrar_participante_seguro', {
-        p_nombre: nombre.trim(),
+        p_nombres: nombres.trim(),
+        p_apellido_paterno: apellidoPaterno.trim(),
+        p_apellido_materno: apellidoMaterno.trim(),
         p_numero_empleado: numeroEmpleado.trim(),
+        p_folio_brazalete: folioBrazalete.trim(),
         p_fingerprint: deviceHash,
         p_skin: { color: colorSkin, accesorio, expresion }
       });
 
       if (rpcError) {
-        throw new Error(rpcError.message || 'No se pudo completar el registro.');
+        throw new Error(rpcError.message || 'Error al validar tu registro.');
       }
 
       setRegistrado(true);
@@ -195,8 +195,10 @@ export default function RegistroQR() {
     } finally {
       setEnviando(false);
     }
+  };
 
   if (registrado) {
+    const nombreCompleto = `${nombres.trim()} ${apellidoPaterno.trim()} ${apellidoMaterno.trim()}`;
     return (
       <main
         style={{
@@ -266,7 +268,7 @@ export default function RegistroQR() {
             boxShadow: '0 20px 50px rgba(0, 0, 0, 0.85), 0 0 25px rgba(16, 185, 129, 0.3)',
           }}
         >
-          <MonoPixelArt color={colorSkin} accesorio={accesorio} expresion={expresion} tamano={135} />
+          <MonoPixelArt color={colorSkin} accesorio={accesorio} expresion={expresion} tamano={130} />
           <h2
             style={{
               fontFamily: "'Mountains of Christmas', cursive, serif",
@@ -274,15 +276,38 @@ export default function RegistroQR() {
               fontSize: '34px',
               lineHeight: 1.1,
               fontWeight: 700,
-              margin: '16px 0 8px 0',
+              margin: '14px 0 8px 0',
               textShadow: '0 2px 6px rgba(0,0,0,0.8)',
             }}
           >
             ¡Totalplayer en la Tómbola! 🕹️
           </h2>
-          <p style={{ color: '#e2e8f0', fontSize: '14px', lineHeight: '1.5', margin: '0 0 20px 0' }}>
-            Tu Totalplayer ya fue colocado dentro de la garra para el sorteo en vivo.
+          <p style={{ color: '#e2e8f0', fontSize: '13px', lineHeight: '1.5', margin: '0 0 16px 0' }}>
+            Tu brazalete quedó vinculado correctamente para el sorteo en vivo.
           </p>
+
+          <div
+            style={{
+              backgroundColor: 'rgba(16, 185, 129, 0.16)',
+              border: '2px dashed #34d399',
+              borderRadius: '14px',
+              padding: '10px',
+              marginBottom: '14px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+              fontFamily: 'monospace',
+              fontSize: '18px',
+              fontWeight: 900,
+              color: '#6ee7b7',
+              letterSpacing: '2px'
+            }}
+          >
+            <Ticket size={20} />
+            <span>BRAZALETE: {folioBrazalete.trim().toUpperCase()}</span>
+          </div>
+
           <div
             style={{
               backgroundColor: 'rgba(2, 6, 23, 0.8)',
@@ -296,10 +321,10 @@ export default function RegistroQR() {
             }}
           >
             <div style={{ color: '#94a3b8' }}>
-              Participante: <strong style={{ color: '#ffffff' }}>{nombre}</strong>
+              Participante: <strong style={{ color: '#ffffff' }}>{nombreCompleto}</strong>
             </div>
             <div style={{ color: '#94a3b8' }}>
-              No. Empleado: <strong style={{ color: '#fbbf24' }}>{numeroEmpleado.toUpperCase()}</strong>
+              No. Empleado: <strong style={{ color: '#fbbf24' }}>{numeroEmpleado.trim().toUpperCase()}</strong>
             </div>
           </div>
         </div>
@@ -369,7 +394,7 @@ export default function RegistroQR() {
 
           @media (min-width: 960px) {
             .escena-grid {
-              grid-template-columns: 1fr 1.1fr 1fr;
+              grid-template-columns: 1fr 1.15fr 1fr;
               gap: 24px;
             }
             .zona-santa {
@@ -384,8 +409,8 @@ export default function RegistroQR() {
             background-color: rgba(2, 6, 23, 0.85);
             border: 2px solid rgba(251, 191, 36, 0.4);
             border-radius: 14px;
-            padding: 12px 14px;
-            font-size: 16px;
+            padding: 10px 12px;
+            font-size: 15px;
             color: #ffffff;
             outline: none;
             transition: border-color 0.2s;
@@ -429,7 +454,7 @@ export default function RegistroQR() {
             fontWeight: 600,
           }}
         >
-          Elige cómo te verás dentro de la Tómbola
+          Vincula tu brazalete y elige cómo te verás en la Tómbola
         </p>
       </header>
 
@@ -437,17 +462,17 @@ export default function RegistroQR() {
         <div className="escena-grid">
           <div className="zona-santa" />
 
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
             <div
               style={{
                 width: '100%',
-                maxWidth: '340px',
+                maxWidth: '380px',
                 backgroundColor: 'rgba(15, 23, 42, 0.72)',
                 backdropFilter: 'blur(8px)',
                 WebkitBackdropFilter: 'blur(8px)',
                 border: '2px solid rgba(251, 191, 36, 0.6)',
                 borderRadius: '26px',
-                padding: '18px',
+                padding: '14px',
                 textAlign: 'center',
                 boxShadow: '0 15px 35px rgba(0,0,0,0.75)',
               }}
@@ -460,28 +485,28 @@ export default function RegistroQR() {
                   textTransform: 'uppercase',
                   letterSpacing: '1.5px',
                   display: 'block',
-                  marginBottom: '8px',
+                  marginBottom: '6px',
                 }}
               >
                 ★ Vista Previa Totalplayer ★
               </span>
-              <MonoPixelArt color={colorSkin} accesorio={accesorio} expresion={expresion} tamano={135} />
+              <MonoPixelArt color={colorSkin} accesorio={accesorio} expresion={expresion} tamano={110} />
             </div>
 
             <div
               style={{
                 width: '100%',
-                maxWidth: '340px',
+                maxWidth: '380px',
                 backgroundColor: 'rgba(15, 23, 42, 0.85)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
                 border: '2px solid rgba(251, 191, 36, 0.45)',
                 borderRadius: '24px',
-                padding: '18px',
+                padding: '16px',
                 boxShadow: '0 12px 30px rgba(0,0,0,0.75)',
                 display: 'flex',
                 flexDirection: 'column',
-                gap: '12px',
+                gap: '10px',
               }}
             >
               {error && (
@@ -513,50 +538,131 @@ export default function RegistroQR() {
                     fontFamily: 'monospace',
                     textTransform: 'uppercase',
                     color: '#fde68a',
-                    marginBottom: '5px',
+                    marginBottom: '4px',
                     fontWeight: 700,
                   }}
                 >
-                  <User size={14} /> Nombre Completo
+                  <User size={13} /> Nombre(s)
                 </label>
                 <input
                   type="text"
                   required
-                  autoComplete="name"
-                  placeholder="Nombre y Apellidos"
-                  value={nombre}
-                  onChange={(e) => setNombre(e.target.value)}
+                  autoComplete="given-name"
+                  placeholder="Ej. Juan Carlos"
+                  value={nombres}
+                  onChange={(e) => setNombres(e.target.value)}
                   className="input-navidad"
                 />
               </div>
 
-              <div>
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '11px',
-                    fontFamily: 'monospace',
-                    textTransform: 'uppercase',
-                    color: '#fde68a',
-                    marginBottom: '5px',
-                    fontWeight: 700,
-                  }}
-                >
-                  <Hash size={14} /> Número de Empleado
-                </label>
-                <input
-                  type="text"
-                  required
-                  inputMode="numeric"
-                  autoComplete="off"
-                  placeholder="Ej. 10452391"
-                  value={numeroEmpleado}
-                  onChange={(e) => setNumeroEmpleado(e.target.value)}
-                  className="input-navidad"
-                  style={{ fontFamily: 'monospace' }}
-                />
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '10px',
+                      fontFamily: 'monospace',
+                      textTransform: 'uppercase',
+                      color: '#fde68a',
+                      marginBottom: '4px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Apellido Paterno
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    autoComplete="family-name"
+                    placeholder="Ej. Pérez"
+                    value={apellidoPaterno}
+                    onChange={(e) => setApellidoPaterno(e.target.value)}
+                    className="input-navidad"
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: 'block',
+                      fontSize: '10px',
+                      fontFamily: 'monospace',
+                      textTransform: 'uppercase',
+                      color: '#fde68a',
+                      marginBottom: '4px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    Apellido Materno
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="Ej. López"
+                    value={apellidoMaterno}
+                    onChange={(e) => setApellidoMaterno(e.target.value)}
+                    className="input-navidad"
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+                <div>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '10px',
+                      fontFamily: 'monospace',
+                      textTransform: 'uppercase',
+                      color: '#fde68a',
+                      marginBottom: '4px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    <Hash size={12} /> No. Empleado
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    inputMode="numeric"
+                    autoComplete="off"
+                    placeholder="Ej. 10452391"
+                    value={numeroEmpleado}
+                    onChange={(e) => setNumeroEmpleado(e.target.value)}
+                    className="input-navidad"
+                    style={{ fontFamily: 'monospace' }}
+                  />
+                </div>
+
+                <div>
+                  <label
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '5px',
+                      fontSize: '10px',
+                      fontFamily: 'monospace',
+                      textTransform: 'uppercase',
+                      color: '#4ade80',
+                      marginBottom: '4px',
+                      fontWeight: 700,
+                    }}
+                  >
+                    <Ticket size={12} /> Folio Brazalete
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    autoComplete="off"
+                    placeholder="Ej. 0428"
+                    value={folioBrazalete}
+                    onChange={(e) => setFolioBrazalete(e.target.value)}
+                    className="input-navidad"
+                    style={{ fontFamily: 'monospace', borderColor: 'rgba(74, 222, 128, 0.5)' }}
+                  />
+                </div>
               </div>
             </div>
           </div>
@@ -736,7 +842,7 @@ export default function RegistroQR() {
             {enviando ? (
               <>
                 <Loader2 size={20} className="animate-spin" />
-                <span>Colocando en la tómbola...</span>
+                <span>Validando en padrón...</span>
               </>
             ) : (
               '🎮 Meter Totalplayer a la Tómbola'

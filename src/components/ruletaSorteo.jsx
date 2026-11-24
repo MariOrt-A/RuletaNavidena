@@ -131,7 +131,6 @@ export default function GarraSorteo() {
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
-  // Oculta automáticamente la tarjeta flotante del ganador después de 6 segundos
   useEffect(() => {
     if (!mostrarBannerGanador) return;
     const timer = setTimeout(() => {
@@ -174,6 +173,7 @@ export default function GarraSorteo() {
 
       return {
         id: part.id,
+        folio: part.folio_brazalete,
         nombre: part.nombre,
         numero: part.numero_empleado,
         skin,
@@ -193,6 +193,7 @@ export default function GarraSorteo() {
         .from('participantes')
         .select('*', { count: 'exact' })
         .eq('ganador', false)
+        .eq('es_valido', true)
         .limit(140);
 
       if (dbError) throw dbError;
@@ -344,7 +345,6 @@ export default function GarraSorteo() {
 
       ctx.save();
 
-      // Viga superior de madera de nogal y riel de bronce
       const rielX = 115;
       const rielW = CANVAS_W - 230;
 
@@ -375,7 +375,6 @@ export default function GarraSorteo() {
         ctx.fill();
       });
 
-      // Carro deslizante sobre el riel
       ctx.fillStyle = '#881337';
       ctx.beginPath();
       ctx.roundRect(g.x - 28, RIEL_Y - 8, 56, 26, 6);
@@ -395,17 +394,14 @@ export default function GarraSorteo() {
       ctx.arc(g.x + 3, RIEL_Y + 6, 3, 0, Math.PI * 2);
       ctx.fill();
 
-      // Física de péndulo: calcula inclinación según la velocidad horizontal del carro
       const anguloObjetivo = Math.max(-0.22, Math.min(0.22, -g.vx * 0.022));
       g.angulo += (anguloObjetivo - g.angulo) * 0.16;
 
-      // Posición desplazada del cabezal por efecto péndulo
       const largoCable = Math.max(0, (g.y - 12) - (RIEL_Y + 18));
       const offsetPenduloX = Math.sin(g.angulo) * largoCable * 0.45;
       const cabezalX = g.x + offsetPenduloX;
       const cabezalY = g.y;
 
-      // Cadena / Cable trenzado en bronce conectado al cabezal oscilante
       ctx.strokeStyle = '#78350f';
       ctx.lineWidth = 6;
       ctx.beginPath();
@@ -422,7 +418,6 @@ export default function GarraSorteo() {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Rotar cabezal, tenazas y peluche atrapado con el ángulo del péndulo
       ctx.save();
       ctx.translate(cabezalX, cabezalY);
       ctx.rotate(g.angulo);
@@ -525,7 +520,6 @@ export default function GarraSorteo() {
     setGanador(null);
     setMostrarBannerGanador(false);
 
-    // Curvas de aceleración arcade
     const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
     const easeOutQuad = (t) => 1 - (1 - t) * (1 - t);
 
@@ -545,6 +539,7 @@ export default function GarraSorteo() {
 
       const monoGanador = {
         id: datosGanador.id,
+        folio: datosGanador.folio_brazalete,
         nombre: datosGanador.nombre,
         numero: datosGanador.numero_empleado,
         skin: skinGanador
@@ -560,7 +555,6 @@ export default function GarraSorteo() {
       const startX = g.x;
       const startTime = performance.now();
 
-      // 1. Desplazamiento horizontal con aceleración y frenado suave
       const moverX = (now) => {
         const p = Math.min((now - startTime) / 1450, 1);
         const e = easeInOutCubic(p);
@@ -577,7 +571,6 @@ export default function GarraSorteo() {
         }
       };
 
-      // 2. Descenso vertical con desaceleración al llegar al peluche
       const bajarGarra = () => {
         g.pinzaAbierta = true;
         const startY = g.y;
@@ -598,7 +591,6 @@ export default function GarraSorteo() {
                 peluchesRef.current = peluchesRef.current.filter((item) => item.id !== fallback.id);
               }
 
-              // Micro-tirón hacia abajo/arriba al asegurar la presa
               g.y += 6;
               setTimeout(() => {
                 g.y -= 6;
@@ -610,7 +602,6 @@ export default function GarraSorteo() {
         requestAnimationFrame(animBajar);
       };
 
-      // 3. Elevación con peso
       const subirGarra = () => {
         const curY = g.y;
         const sTime = performance.now();
@@ -624,7 +615,6 @@ export default function GarraSorteo() {
         requestAnimationFrame(animSubir);
       };
 
-      // 4. Traslado a la bota con inercia
       const llevarALaBota = () => {
         const curX = g.x;
         const dTime = performance.now();
@@ -645,7 +635,6 @@ export default function GarraSorteo() {
         requestAnimationFrame(animBota);
       };
 
-      // 5. Apertura y caída dentro de la bota
       const soltarEnBota = () => {
         g.pinzaAbierta = true;
         g.monoAtrapado = null;
@@ -877,7 +866,7 @@ export default function GarraSorteo() {
                 left: '50%',
                 transform: 'translateX(-50%)',
                 width: '90%',
-                maxWidth: '520px',
+                maxWidth: '540px',
                 backgroundColor: 'rgba(15, 23, 42, 0.94)',
                 backdropFilter: 'blur(14px)',
                 WebkitBackdropFilter: 'blur(14px)',
@@ -926,21 +915,37 @@ export default function GarraSorteo() {
                 >
                   {ganador.nombre}
                 </div>
-                <div
-                  style={{
-                    display: 'inline-block',
-                    marginTop: '6px',
-                    backgroundColor: 'rgba(2, 6, 23, 0.85)',
-                    border: '1px solid rgba(251, 191, 36, 0.4)',
-                    padding: '3px 10px',
-                    borderRadius: '10px',
-                    fontFamily: 'monospace',
-                    fontSize: '13px',
-                    color: '#fbbf24',
-                    fontWeight: 800,
-                  }}
-                >
-                  No. Empleado: {ganador.numero}
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                  {ganador.folio && (
+                    <span
+                      style={{
+                        backgroundColor: 'rgba(16, 185, 129, 0.2)',
+                        border: '1px solid #34d399',
+                        padding: '3px 10px',
+                        borderRadius: '10px',
+                        fontFamily: 'monospace',
+                        fontSize: '13px',
+                        color: '#6ee7b7',
+                        fontWeight: 900,
+                      }}
+                    >
+                      Brazalete: {ganador.folio}
+                    </span>
+                  )}
+                  <span
+                    style={{
+                      backgroundColor: 'rgba(2, 6, 23, 0.85)',
+                      border: '1px solid rgba(251, 191, 36, 0.4)',
+                      padding: '3px 10px',
+                      borderRadius: '10px',
+                      fontFamily: 'monospace',
+                      fontSize: '13px',
+                      color: '#fbbf24',
+                      fontWeight: 800,
+                    }}
+                  >
+                    Emp: {ganador.numero}
+                  </span>
                 </div>
               </div>
             </div>
@@ -949,7 +954,7 @@ export default function GarraSorteo() {
 
         <aside
           style={{
-            width: '310px',
+            width: '320px',
             maxWidth: '92vw',
             maxHeight: 'calc(66dvh)',
             backgroundColor: 'rgba(15, 23, 42, 0.88)',
@@ -1040,7 +1045,7 @@ export default function GarraSorteo() {
                         fontWeight: 800,
                       }}
                     >
-                      #{item.turno} • {item.numero}
+                      #{item.turno} • {item.folio ? `Folio ${item.folio}` : `Emp ${item.numero}`}
                     </div>
                     <div
                       style={{
