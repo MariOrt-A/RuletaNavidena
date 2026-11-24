@@ -25,8 +25,25 @@ export default function App() {
   };
 
   return (
-    <div style={{ minHeight: '100dvh', width: '100%', margin: 0, padding: 0 }}>
+    <div style={{ minHeight: '100dvh', width: '100%', margin: 0, padding: 0, position: 'relative' }}>
       {renderizarVista()}
+
+      <footer
+        style={{
+          position: 'fixed',
+          bottom: '6px',
+          right: '14px',
+          zIndex: 35,
+          fontSize: '10px',
+          fontFamily: 'monospace',
+          color: 'rgba(254, 243, 199, 0.45)',
+          pointerEvents: 'none',
+          textShadow: '0 1px 3px rgba(0, 0, 0, 0.9)',
+          letterSpacing: '0.5px',
+        }}
+      >
+        Desarrollado por Mario Ortega Almaraz • Red Central 2026 
+      </footer>
     </div>
   );
 }
