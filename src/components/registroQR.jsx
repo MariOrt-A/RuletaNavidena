@@ -151,6 +151,14 @@ export default function RegistroQR() {
     initFp();
   }, []);
 
+  useEffect(() => {
+  if (!mostrarBannerGanador) return;
+  const timer = setTimeout(() => {
+    setMostrarBannerGanador(false);
+  }, 6000); // 6000 ms = 6 segundos visible
+  return () => clearTimeout(timer);
+}, [mostrarBannerGanador, ganador]);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -170,37 +178,15 @@ export default function RegistroQR() {
     setEnviando(true);
 
     try {
-      const { data: existentes, error: checkError } = await supabase
-        .from('participantes')
-        .select('id, numero_empleado, fingerprint')
-        .or(`numero_empleado.eq.${empLimpio},fingerprint.eq.${deviceHash}`);
+      const { error: rpcError } = await supabase.rpc('registrar_participante_seguro', {
+        p_nombre: nombre.trim(),
+        p_numero_empleado: numeroEmpleado.trim(),
+        p_fingerprint: deviceHash,
+        p_skin: { color: colorSkin, accesorio, expresion }
+      });
 
-      if (checkError) throw checkError;
-
-      if (existentes && existentes.length > 0) {
-        const dupEmp = existentes.find((r) => r.numero_empleado === empLimpio);
-        if (dupEmp) {
-          throw new Error('Este número de empleado ya está registrado en la tómbola.');
-        }
-        throw new Error('Ya se registró un participante desde este dispositivo.');
-      }
-
-      const { error: insertError } = await supabase
-        .from('participantes')
-        .insert([
-          {
-            nombre: nombreLimpio,
-            numero_empleado: empLimpio,
-            fingerprint: deviceHash,
-            skin: { color: colorSkin, accesorio, expresion }
-          }
-        ]);
-
-      if (insertError) {
-        if (insertError.code === '23505') {
-          throw new Error('Este número de empleado ya está registrado en la tómbola.');
-        }
-        throw new Error(insertError.message);
+      if (rpcError) {
+        throw new Error(rpcError.message || 'No se pudo completar el registro.');
       }
 
       setRegistrado(true);
@@ -209,7 +195,6 @@ export default function RegistroQR() {
     } finally {
       setEnviando(false);
     }
-  };
 
   if (registrado) {
     return (

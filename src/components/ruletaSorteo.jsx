@@ -94,6 +94,7 @@ export default function GarraSorteo() {
 
   const [jugando, setJugando] = useState(false);
   const [ganador, setGanador] = useState(null);
+  const [mostrarBannerGanador, setMostrarBannerGanador] = useState(false);
   const [historialGanadores, setHistorialGanadores] = useState([]);
   const [error, setError] = useState('');
   const [totalEnUrna, setTotalEnUrna] = useState(null);
@@ -109,6 +110,8 @@ export default function GarraSorteo() {
   const garraRef = useRef({
     x: 380,
     y: 70,
+    vx: 0,
+    angulo: 0,
     pinzaAbierta: true,
     monoAtrapado: null,
     monoCayendo: null
@@ -127,6 +130,15 @@ export default function GarraSorteo() {
     document.addEventListener('fullscreenchange', onFsChange);
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
+
+  // Oculta automáticamente la tarjeta flotante del ganador después de 6 segundos
+  useEffect(() => {
+    if (!mostrarBannerGanador) return;
+    const timer = setTimeout(() => {
+      setMostrarBannerGanador(false);
+    }, 6000);
+    return () => clearTimeout(timer);
+  }, [mostrarBannerGanador, ganador]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -332,6 +344,7 @@ export default function GarraSorteo() {
 
       ctx.save();
 
+      // Viga superior de madera de nogal y riel de bronce
       const rielX = 115;
       const rielW = CANVAS_W - 230;
 
@@ -362,6 +375,7 @@ export default function GarraSorteo() {
         ctx.fill();
       });
 
+      // Carro deslizante sobre el riel
       ctx.fillStyle = '#881337';
       ctx.beginPath();
       ctx.roundRect(g.x - 28, RIEL_Y - 8, 56, 26, 6);
@@ -381,11 +395,22 @@ export default function GarraSorteo() {
       ctx.arc(g.x + 3, RIEL_Y + 6, 3, 0, Math.PI * 2);
       ctx.fill();
 
+      // Física de péndulo: calcula inclinación según la velocidad horizontal del carro
+      const anguloObjetivo = Math.max(-0.22, Math.min(0.22, -g.vx * 0.022));
+      g.angulo += (anguloObjetivo - g.angulo) * 0.16;
+
+      // Posición desplazada del cabezal por efecto péndulo
+      const largoCable = Math.max(0, (g.y - 12) - (RIEL_Y + 18));
+      const offsetPenduloX = Math.sin(g.angulo) * largoCable * 0.45;
+      const cabezalX = g.x + offsetPenduloX;
+      const cabezalY = g.y;
+
+      // Cadena / Cable trenzado en bronce conectado al cabezal oscilante
       ctx.strokeStyle = '#78350f';
       ctx.lineWidth = 6;
       ctx.beginPath();
       ctx.moveTo(g.x, RIEL_Y + 18);
-      ctx.lineTo(g.x, g.y - 12);
+      ctx.lineTo(cabezalX, cabezalY - 12);
       ctx.stroke();
 
       ctx.strokeStyle = '#fbbf24';
@@ -393,18 +418,24 @@ export default function GarraSorteo() {
       ctx.setLineDash([6, 4]);
       ctx.beginPath();
       ctx.moveTo(g.x, RIEL_Y + 18);
-      ctx.lineTo(g.x, g.y - 12);
+      ctx.lineTo(cabezalX, cabezalY - 12);
       ctx.stroke();
       ctx.setLineDash([]);
 
-      const sep = g.pinzaAbierta ? 32 : 15;
+      // Rotar cabezal, tenazas y peluche atrapado con el ángulo del péndulo
+      ctx.save();
+      ctx.translate(cabezalX, cabezalY);
+      ctx.rotate(g.angulo);
+      ctx.translate(-cabezalX, -cabezalY);
+
+      const sep = g.pinzaAbierta ? 33 : 15;
       const dibujarTenaza = (lado) => {
-        const hombroX = g.x + lado * 16;
-        const hombroY = g.y + 8;
-        const codoX = g.x + lado * sep;
-        const codoY = g.y + 32;
-        const puntaX = g.x + lado * (sep - 11);
-        const puntaY = g.y + 48;
+        const hombroX = cabezalX + lado * 16;
+        const hombroY = cabezalY + 8;
+        const codoX = cabezalX + lado * sep;
+        const codoY = cabezalY + 32;
+        const puntaX = cabezalX + lado * (sep - 11);
+        const puntaY = cabezalY + 48;
 
         ctx.strokeStyle = 'rgba(0, 0, 0, 0.5)';
         ctx.lineWidth = 9;
@@ -450,14 +481,14 @@ export default function GarraSorteo() {
       dibujarTenaza(-1);
       dibujarTenaza(1);
 
-      const gradCabezal = ctx.createLinearGradient(g.x - 22, g.y - 14, g.x + 22, g.y + 14);
+      const gradCabezal = ctx.createLinearGradient(cabezalX - 22, cabezalY - 14, cabezalX + 22, cabezalY + 14);
       gradCabezal.addColorStop(0, '#9f1239');
       gradCabezal.addColorStop(0.5, '#be123c');
       gradCabezal.addColorStop(1, '#4c0519');
 
       ctx.fillStyle = gradCabezal;
       ctx.beginPath();
-      ctx.roundRect(g.x - 22, g.y - 14, 44, 26, 8);
+      ctx.roundRect(cabezalX - 22, cabezalY - 14, 44, 26, 8);
       ctx.fill();
 
       ctx.strokeStyle = '#fbbf24';
@@ -469,15 +500,16 @@ export default function GarraSorteo() {
       ctx.shadowColor = '#fbbf24';
       ctx.shadowBlur = 12;
       ctx.beginPath();
-      ctx.arc(g.x, g.y - 1, 6, 0, Math.PI * 2);
+      ctx.arc(cabezalX, cabezalY - 1, 6, 0, Math.PI * 2);
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      ctx.restore();
-
       if (g.monoAtrapado) {
-        dibujarMonoCanvas(ctx, g.monoAtrapado, g.x, g.y + 34, 3.0, 0);
+        dibujarMonoCanvas(ctx, g.monoAtrapado, cabezalX, cabezalY + 34, 3.0, 0);
       }
+
+      ctx.restore();
+      ctx.restore();
 
       animId = requestAnimationFrame(render);
     };
@@ -491,6 +523,11 @@ export default function GarraSorteo() {
     setJugando(true);
     setError('');
     setGanador(null);
+    setMostrarBannerGanador(false);
+
+    // Curvas de aceleración arcade
+    const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
+    const easeOutQuad = (t) => 1 - (1 - t) * (1 - t);
 
     try {
       const { data, error: rpcError } = await supabase.rpc('sortear_ganador');
@@ -523,25 +560,35 @@ export default function GarraSorteo() {
       const startX = g.x;
       const startTime = performance.now();
 
+      // 1. Desplazamiento horizontal con aceleración y frenado suave
       const moverX = (now) => {
-        const p = Math.min((now - startTime) / 1400, 1);
-        g.x = startX + (targetX - startX) * p;
-        if (p < 1) requestAnimationFrame(moverX);
-        else {
+        const p = Math.min((now - startTime) / 1450, 1);
+        const e = easeInOutCubic(p);
+        const prevX = g.x;
+        g.x = startX + (targetX - startX) * e;
+        g.vx = g.x - prevX;
+
+        if (p < 1) {
+          requestAnimationFrame(moverX);
+        } else {
+          g.vx = 0;
           if (objetivo) objetivo.vx = 0;
-          bajarGarra();
+          setTimeout(bajarGarra, 180);
         }
       };
 
+      // 2. Descenso vertical con desaceleración al llegar al peluche
       const bajarGarra = () => {
         g.pinzaAbierta = true;
         const startY = g.y;
         const bTime = performance.now();
         const animBajar = (now) => {
-          const p = Math.min((now - bTime) / 1000, 1);
-          g.y = startY + (targetY - startY) * p;
-          if (p < 1) requestAnimationFrame(animBajar);
-          else {
+          const p = Math.min((now - bTime) / 1050, 1);
+          const e = easeOutQuad(p);
+          g.y = startY + (targetY - startY) * e;
+          if (p < 1) {
+            requestAnimationFrame(animBajar);
+          } else {
             g.pinzaAbierta = false;
             setTimeout(() => {
               g.monoAtrapado = monoGanador;
@@ -551,37 +598,54 @@ export default function GarraSorteo() {
                 peluchesRef.current = peluchesRef.current.filter((item) => item.id !== fallback.id);
               }
 
-              subirGarra();
-            }, 350);
+              // Micro-tirón hacia abajo/arriba al asegurar la presa
+              g.y += 6;
+              setTimeout(() => {
+                g.y -= 6;
+                subirGarra();
+              }, 120);
+            }, 320);
           }
         };
         requestAnimationFrame(animBajar);
       };
 
+      // 3. Elevación con peso
       const subirGarra = () => {
         const curY = g.y;
         const sTime = performance.now();
         const animSubir = (now) => {
-          const p = Math.min((now - sTime) / 1000, 1);
-          g.y = curY - (curY - 70) * p;
+          const p = Math.min((now - sTime) / 1100, 1);
+          const e = easeInOutCubic(p);
+          g.y = curY - (curY - 70) * e;
           if (p < 1) requestAnimationFrame(animSubir);
           else llevarALaBota();
         };
         requestAnimationFrame(animSubir);
       };
 
+      // 4. Traslado a la bota con inercia
       const llevarALaBota = () => {
         const curX = g.x;
         const dTime = performance.now();
         const animBota = (now) => {
-          const p = Math.min((now - dTime) / 1200, 1);
-          g.x = curX + (BOCA_BOTA_X - curX) * p;
-          if (p < 1) requestAnimationFrame(animBota);
-          else soltarEnBota();
+          const p = Math.min((now - dTime) / 1350, 1);
+          const e = easeInOutCubic(p);
+          const prevX = g.x;
+          g.x = curX + (BOCA_BOTA_X - curX) * e;
+          g.vx = g.x - prevX;
+
+          if (p < 1) {
+            requestAnimationFrame(animBota);
+          } else {
+            g.vx = 0;
+            setTimeout(soltarEnBota, 220);
+          }
         };
         requestAnimationFrame(animBota);
       };
 
+      // 5. Apertura y caída dentro de la bota
       const soltarEnBota = () => {
         g.pinzaAbierta = true;
         g.monoAtrapado = null;
@@ -608,6 +672,7 @@ export default function GarraSorteo() {
           } else {
             g.monoCayendo = null;
             setGanador(monoGanador);
+            setMostrarBannerGanador(true);
             setHistorialGanadores((prev) =>
               prev.some((item) => item.id === monoGanador.id)
                 ? prev
@@ -631,6 +696,8 @@ export default function GarraSorteo() {
       setJugando(false);
       garraRef.current.x = 380;
       garraRef.current.y = 70;
+      garraRef.current.vx = 0;
+      garraRef.current.angulo = 0;
       garraRef.current.pinzaAbierta = true;
       garraRef.current.monoAtrapado = null;
       garraRef.current.monoCayendo = null;
@@ -666,8 +733,10 @@ export default function GarraSorteo() {
           }
 
           @keyframes entradaGanador {
-            0% { opacity: 0; transform: scale(0.85) translateY(15px); }
-            100% { opacity: 1; transform: scale(1) translateY(0); }
+            0% { opacity: 0; transform: translateX(-50%) scale(0.85) translateY(15px); }
+            12% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+            88% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+            100% { opacity: 0; transform: translateX(-50%) scale(0.95) translateY(10px); }
           }
 
           .btn-pantalla-completa {
@@ -741,7 +810,7 @@ export default function GarraSorteo() {
         <h1
           style={{
             fontFamily: "'Mountains of Christmas', cursive, serif",
-            fontSize: 'clamp(40px, 5vw, 66px)',
+            fontSize: 'clamp(34px, 4.2vw, 56px)',
             fontWeight: 700,
             color: '#fbbf24',
             textShadow: '0 4px 14px rgba(220, 38, 38, 0.95), 0 3px 6px #000',
@@ -800,7 +869,7 @@ export default function GarraSorteo() {
             }}
           />
 
-          {ganador && !jugando && (
+          {ganador && mostrarBannerGanador && !jugando && (
             <div
               style={{
                 position: 'absolute',
@@ -819,7 +888,7 @@ export default function GarraSorteo() {
                 alignItems: 'center',
                 gap: '18px',
                 boxShadow: '0 20px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(16, 185, 129, 0.45)',
-                animation: 'entradaGanador 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                animation: 'entradaGanador 6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                 zIndex: 30,
               }}
             >
