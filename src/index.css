@@ -1,0 +1,70 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+
+html, body, #root {
+  margin: 0;
+  padding: 0;
+  width: 100%;
+  height: 100%;
+  overflow-x: hidden;
+  background-color: #050812;
+}
+
+:root {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  color-scheme: dark;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  min-height: 100vh;
+  background-color: #030712;
+  color: #f8fafc;
+  overflow-x: hidden;
+}
+
+/* Animación sutil de copos de nieve */
+@keyframes snowfall {
+  0% {
+    transform: translateY(-5vh) rotate(0deg);
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(105vh) rotate(360deg);
+    opacity: 0.15;
+  }
+}
+
+.snowflake {
+  position: fixed;
+  top: -20px;
+  color: #ffffff;
+  user-select: none;
+  pointer-events: none;
+  z-index: 1;
+  animation: snowfall linear infinite;
+}
+
+/* Reglas limpias para imprimir el cartel del QR sin fondos oscuros ni botones */
+@media print {
+  body {
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  .print-hide {
+    display: none !important;
+  }
+  .print-clean {
+    background: #ffffff !important;
+    box-shadow: none !important;
+    border: 2px solid #cbd5e1 !important;
+    color: #000000 !important;
+  }
+}
