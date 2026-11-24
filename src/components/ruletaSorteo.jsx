@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Play, Maximize2, Minimize2, Sparkles } from 'lucide-react';
+import { Play, Maximize2, Minimize2, Sparkles, Lock, KeyRound } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 function MonoPixelArtLocal({ color = '#e11d48', accesorio = 'santa', expresion = 'feliz', tamano = 90 }) {
@@ -92,6 +92,12 @@ export default function GarraSorteo() {
   const canvasRef = useRef(null);
   const bgImgRef = useRef(null);
 
+  // Control de acceso con PIN de administrador
+  const [pinAdmin, setPinAdmin] = useState(() => sessionStorage.getItem('pin_tombola') || '');
+  const [pinInput, setPinInput] = useState('');
+  const [pinDesbloqueado, setPinDesbloqueado] = useState(() => Boolean(sessionStorage.getItem('pin_tombola')));
+  const [errorPin, setErrorPin] = useState('');
+
   const [jugando, setJugando] = useState(false);
   const [ganador, setGanador] = useState(null);
   const [mostrarBannerGanador, setMostrarBannerGanador] = useState(false);
@@ -147,14 +153,14 @@ export default function GarraSorteo() {
     }
   };
 
-  const procesarPeluchesReales = (participantes = []) => {
-    if (!participantes.length) {
+  const procesarPeluchesReales = (avatares = []) => {
+    if (!avatares.length) {
       peluchesRef.current = [];
       return;
     }
 
     const existentesMap = new Map(peluchesRef.current.map((p) => [p.id, p]));
-    const muestra = participantes.slice(0, 140);
+    const muestra = avatares.slice(0, 140);
     const columnas = 22;
 
     peluchesRef.current = muestra.map((part, i) => {
@@ -173,9 +179,6 @@ export default function GarraSorteo() {
 
       return {
         id: part.id,
-        folio: part.folio_brazalete,
-        nombre: part.nombre,
-        numero: part.numero_empleado,
         skin,
         x: 325 + (col * 29) + (Math.sin(i * 2.3) * 6),
         baseY: 488 - (fila * 13) + (Math.cos(i * 1.8) * 3),
@@ -190,19 +193,19 @@ export default function GarraSorteo() {
   const cargarParticipantesActivos = async () => {
     try {
       const { data, error: dbError } = await supabase.rpc('obtener_avatares_urna');
-      if (!dbError && data) {
-        setTotalEnUrna(data.total ?? 0);
-        procesarPeluchesReales(data.avatares || []);
-      }
 
-      setTotalEnUrna(count ?? 0);
-      if (data && data.length > 0) {
-        procesarPeluchesReales(data);
-      } else {
-        peluchesRef.current = [];
+      if (dbError) throw dbError;
+
+      if (data) {
+        setTotalEnUrna(data.total ?? 0);
+        if (data.avatares && data.avatares.length > 0) {
+          procesarPeluchesReales(data.avatares);
+        } else {
+          peluchesRef.current = [];
+        }
       }
     } catch (err) {
-      console.error('Error al cargar participantes activos:', err);
+      console.error('Error al cargar avatares:', err);
     }
   };
 
@@ -267,6 +270,7 @@ export default function GarraSorteo() {
   };
 
   useEffect(() => {
+    if (!pinDesbloqueado) return;
     cargarParticipantesActivos();
     const interval = setInterval(() => {
       if (!jugando) {
@@ -274,9 +278,10 @@ export default function GarraSorteo() {
       }
     }, 50000);
     return () => clearInterval(interval);
-  }, [jugando]);
+  }, [jugando, pinDesbloqueado]);
 
   useEffect(() => {
+    if (!pinDesbloqueado) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
     const ctx = canvas.getContext('2d');
@@ -508,7 +513,20 @@ export default function GarraSorteo() {
 
     render();
     return () => cancelAnimationFrame(animId);
-  }, []);
+  }, [pinDesbloqueado]);
+
+  const handleDesbloquear = (e) => {
+    e.preventDefault();
+    if (!pinInput.trim()) {
+      setErrorPin('Ingresa el PIN de administrador.');
+      return;
+    }
+    const limpio = pinInput.trim();
+    setPinAdmin(limpio);
+    sessionStorage.setItem('pin_tombola', limpio);
+    setPinDesbloqueado(true);
+    setErrorPin('');
+  };
 
   const jugarGarra = async () => {
     if (jugando) return;
@@ -521,8 +539,17 @@ export default function GarraSorteo() {
     const easeOutQuad = (t) => 1 - (1 - t) * (1 - t);
 
     try {
-      const { data, error: rpcError } = await supabase.rpc('sortear_ganador');
-      if (rpcError) throw new Error(rpcError.message || 'No quedan participantes disponibles.');
+      const { data, error: rpcError } = await supabase.rpc('sortear_ganador', { p_pin: pinAdmin });
+      if (rpcError) {
+        if (rpcError.message?.toLowerCase().includes('pin')) {
+          sessionStorage.removeItem('pin_tombola');
+          setPinDesbloqueado(false);
+          setErrorPin('PIN incorrecto. Vuelve a ingresarlo.');
+          setJugando(false);
+          return;
+        }
+        throw new Error(rpcError.message || 'No quedan participantes disponibles.');
+      }
 
       setTotalEnUrna(data.total_restantes);
       const datosGanador = data.ganador;
@@ -689,6 +716,129 @@ export default function GarraSorteo() {
       garraRef.current.monoCayendo = null;
     }
   };
+
+  // Pantalla de bloqueo por PIN antes de mostrar la cabina de sorteo
+  if (!pinDesbloqueado) {
+    return (
+      <main
+        style={{
+          minHeight: '100dvh',
+          width: '100vw',
+          background: 'radial-gradient(circle at top, #1e1014 0%, #070a12 70%, #03050a 100%)',
+          color: '#ffffff',
+          fontFamily: "'Poppins', 'Segoe UI', sans-serif",
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          padding: '20px',
+          boxSizing: 'border-box',
+        }}
+      >
+        <form
+          onSubmit={handleDesbloquear}
+          style={{
+            width: '100%',
+            maxWidth: '380px',
+            backgroundColor: 'rgba(15, 23, 42, 0.92)',
+            border: '2px solid #fbbf24',
+            borderRadius: '24px',
+            padding: '28px 24px',
+            textAlign: 'center',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.85)',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '16px',
+          }}
+        >
+          <div
+            style={{
+              width: '56px',
+              height: '56px',
+              borderRadius: '16px',
+              backgroundColor: 'rgba(251, 191, 36, 0.15)',
+              border: '1px solid rgba(251, 191, 36, 0.4)',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              margin: '0 auto',
+            }}
+          >
+            <Lock size={28} color="#fbbf24" />
+          </div>
+
+          <div>
+            <h2 style={{ margin: 0, fontSize: '20px', fontWeight: 800, color: '#fde68a' }}>
+              Cabina de Control Tómbola
+            </h2>
+            <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+              Acceso restringido. Ingresa el PIN de administrador.
+            </p>
+          </div>
+
+          {errorPin && (
+            <div
+              style={{
+                padding: '8px 12px',
+                backgroundColor: 'rgba(225, 29, 72, 0.25)',
+                border: '1px solid #fb7185',
+                color: '#fecdd3',
+                borderRadius: '10px',
+                fontSize: '12px',
+              }}
+            >
+              {errorPin}
+            </div>
+          )}
+
+          <input
+            type="password"
+            placeholder="PIN de acceso"
+            value={pinInput}
+            onChange={(e) => setPinInput(e.target.value)}
+            autoFocus
+            style={{
+              width: '100%',
+              boxSizing: 'border-box',
+              backgroundColor: 'rgba(2, 6, 23, 0.9)',
+              border: '2px solid rgba(251, 191, 36, 0.45)',
+              borderRadius: '14px',
+              padding: '12px',
+              fontSize: '16px',
+              color: '#ffffff',
+              textAlign: 'center',
+              fontFamily: 'monospace',
+              letterSpacing: '3px',
+              outline: 'none',
+            }}
+          />
+
+          <button
+            type="submit"
+            style={{
+              width: '100%',
+              minHeight: '48px',
+              background: 'linear-gradient(90deg, #dc2626 0%, #d97706 100%)',
+              border: '2px solid #fbbf24',
+              borderRadius: '14px',
+              color: '#ffffff',
+              fontFamily: 'monospace',
+              fontWeight: 900,
+              fontSize: '14px',
+              textTransform: 'uppercase',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              gap: '8px',
+            }}
+          >
+            <KeyRound size={18} />
+            <span>Desbloquear Tómbola</span>
+          </button>
+        </form>
+      </main>
+    );
+  }
 
   return (
     <main
