@@ -1200,11 +1200,11 @@ export default function GarraSorteo() {
             <div
               style={{
                 position: 'absolute',
-                top: '50%',
+                top: '70%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
                 width: '88%',
-                maxWidth: '600px',
+                maxWidth: '560px',
                 backgroundColor: 'rgba(15, 23, 42, 0.92)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
