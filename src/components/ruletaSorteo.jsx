@@ -1204,7 +1204,7 @@ export default function GarraSorteo() {
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
                 width: '88%',
-                maxWidth: '560px',
+                maxWidth: '600px',
                 backgroundColor: 'rgba(15, 23, 42, 0.92)',
                 backdropFilter: 'blur(12px)',
                 WebkitBackdropFilter: 'blur(12px)',
@@ -1246,7 +1246,7 @@ export default function GarraSorteo() {
                     fontSize: 'clamp(19px, 2.3vw, 26px)',
                     fontWeight: 900,
                     color: '#ffffff',
-                    marginTop: '50px',
+                    marginTop: '4px',
                     lineHeight: 1.2,
                     wordBreak: 'break-word',
                     textTransform: 'uppercase'
