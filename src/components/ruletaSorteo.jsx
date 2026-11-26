@@ -1,5 +1,5 @@
 import React, { useRef, useState, useEffect } from 'react';
-import { Play, Maximize2, Minimize2, Sparkles, Lock, KeyRound } from 'lucide-react';
+import { Play, Maximize2, Minimize2, Sparkles, Lock, KeyRound, RotateCcw } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 function MonoPixelArtLocal({ color = '#e11d48', accesorio = 'santa', expresion = 'feliz', tamano = 90 }) {
@@ -92,15 +92,19 @@ export default function GarraSorteo() {
   const canvasRef = useRef(null);
   const bgImgRef = useRef(null);
 
-  // Control de acceso con PIN de administrador
+  // Control de acceso con PIN y configuración de tiro ganador (X)
   const [pinAdmin, setPinAdmin] = useState(() => sessionStorage.getItem('pin_tombola') || '');
   const [pinInput, setPinInput] = useState('');
+  const [tiroObjetivoInput, setTiroObjetivoInput] = useState(() => sessionStorage.getItem('tiro_objetivo_tombola') || '1');
+  const [tiroGanadorObjetivo, setTiroGanadorObjetivo] = useState(() => Math.max(1, parseInt(sessionStorage.getItem('tiro_objetivo_tombola') || '1', 10)));
+  const [intentoActualRonda, setIntentoActualRonda] = useState(0);
+
   const [pinDesbloqueado, setPinDesbloqueado] = useState(() => Boolean(sessionStorage.getItem('pin_tombola')));
   const [errorPin, setErrorPin] = useState('');
 
   const [jugando, setJugando] = useState(false);
   const [ganador, setGanador] = useState(null);
-  const [mostrarBannerGanador, setMostrarBannerGanador] = useState(false);
+  const [descartadoReciente, setDescartadoReciente] = useState(null);
   const [historialGanadores, setHistorialGanadores] = useState([]);
   const [error, setError] = useState('');
   const [totalEnUrna, setTotalEnUrna] = useState(null);
@@ -137,13 +141,14 @@ export default function GarraSorteo() {
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
+  // El aviso de descartado sí se oculta solo a los 4 segundos; el banner de GANADOR queda fijo hasta volver a usar la tómbola
   useEffect(() => {
-    if (!mostrarBannerGanador) return;
+    if (!descartadoReciente) return;
     const timer = setTimeout(() => {
-      setMostrarBannerGanador(false);
-    }, 6000);
+      setDescartadoReciente(null);
+    }, 4000);
     return () => clearTimeout(timer);
-  }, [mostrarBannerGanador, ganador]);
+  }, [descartadoReciente]);
 
   const toggleFullscreen = () => {
     if (!document.fullscreenElement) {
@@ -207,6 +212,47 @@ export default function GarraSorteo() {
     } catch (err) {
       console.error('Error al cargar avatares:', err);
     }
+  };
+
+  const dibujarCarbonCanvas = (ctx, x, y, escala = 3.0, rot = 0, alpha = 1) => {
+    ctx.save();
+    ctx.globalAlpha = alpha;
+    ctx.translate(x, y);
+    ctx.rotate(rot);
+
+    const s = escala;
+    // Humo / ceniza alrededor del carbón
+    ctx.fillStyle = 'rgba(148, 163, 184, 0.55)';
+    ctx.fillRect(-4 * s, -8 * s, 2 * s, 2 * s);
+    ctx.fillRect(3 * s, -7 * s, 2 * s, 2 * s);
+    ctx.fillRect(0, -10 * s, 2 * s, 2 * s);
+
+    // Sombra base
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
+    ctx.fillRect(-5 * s, 5 * s, 10 * s, 2 * s);
+
+    // Cuerpo irregular de carbón pixel-art
+    ctx.fillStyle = '#1e293b';
+    ctx.fillRect(-5 * s, -3 * s, 10 * s, 7 * s);
+    ctx.fillRect(-4 * s, -5 * s, 8 * s, 10 * s);
+    ctx.fillRect(-6 * s, -1 * s, 12 * s, 4 * s);
+
+    // Sombras profundas del carbón
+    ctx.fillStyle = '#090d16';
+    ctx.fillRect(-4 * s, 1 * s, 8 * s, 3 * s);
+    ctx.fillRect(2 * s, -3 * s, 3 * s, 5 * s);
+    ctx.fillRect(-6 * s, -1 * s, 1 * s, 4 * s);
+    ctx.fillRect(5 * s, -1 * s, 1 * s, 4 * s);
+
+    // Facetas y brillos minerales gris/carbón
+    ctx.fillStyle = '#475569';
+    ctx.fillRect(-3 * s, -4 * s, 3 * s, 2 * s);
+    ctx.fillRect(-4 * s, -1 * s, 2 * s, 2 * s);
+    ctx.fillStyle = '#94a3b8';
+    ctx.fillRect(-2 * s, -3 * s, 1 * s, 1 * s);
+    ctx.fillRect(1 * s, -1 * s, 1 * s, 1 * s);
+
+    ctx.restore();
   };
 
   const dibujarMonoCanvas = (ctx, mono, x, y, escala = 2.4, rot = 0, alpha = 1) => {
@@ -323,15 +369,26 @@ export default function GarraSorteo() {
       const g = garraRef.current;
 
       if (g.monoCayendo) {
-        dibujarMonoCanvas(
-          ctx,
-          g.monoCayendo.mono,
-          g.monoCayendo.x,
-          g.monoCayendo.y,
-          3.0,
-          g.monoCayendo.rot,
-          g.monoCayendo.alpha
-        );
+        if (g.monoCayendo.esCarbon) {
+          dibujarCarbonCanvas(
+            ctx,
+            g.monoCayendo.x,
+            g.monoCayendo.y,
+            3.2,
+            g.monoCayendo.rot,
+            g.monoCayendo.alpha
+          );
+        } else {
+          dibujarMonoCanvas(
+            ctx,
+            g.monoCayendo.mono,
+            g.monoCayendo.x,
+            g.monoCayendo.y,
+            3.0,
+            g.monoCayendo.rot,
+            g.monoCayendo.alpha
+          );
+        }
       }
 
       if (bgImgRef.current) {
@@ -522,24 +579,53 @@ export default function GarraSorteo() {
       return;
     }
     const limpio = pinInput.trim();
+    const numTiros = Math.max(1, parseInt(tiroObjetivoInput, 10) || 1);
+
     setPinAdmin(limpio);
+    setTiroGanadorObjetivo(numTiros);
+    setIntentoActualRonda(0);
     sessionStorage.setItem('pin_tombola', limpio);
+    sessionStorage.setItem('tiro_objetivo_tombola', String(numTiros));
     setPinDesbloqueado(true);
     setErrorPin('');
+  };
+
+  const handleCambiarTiroObjetivo = (valor) => {
+    const num = Math.max(1, parseInt(valor, 10) || 1);
+    setTiroGanadorObjetivo(num);
+    sessionStorage.setItem('tiro_objetivo_tombola', String(num));
+  };
+
+  // Botón "Siguiente Sorteo": limpia solo el log visual de ganadores y reinicia el contador de intentos de la ronda
+  const handleSiguienteSorteo = () => {
+    if (jugando) return;
+    setHistorialGanadores([]);
+    setGanador(null);
+    setDescartadoReciente(null);
+    setIntentoActualRonda(0);
+    setError('');
   };
 
   const jugarGarra = async () => {
     if (jugando) return;
     setJugando(true);
     setError('');
+    // El layer del ganador anterior se oculta únicamente al volver a presionar "USAR TOMBOLA"
     setGanador(null);
-    setMostrarBannerGanador(false);
+    setDescartadoReciente(null);
+
+    const siguienteIntento = intentoActualRonda + 1;
+    const esTiroGanador = siguienteIntento >= tiroGanadorObjetivo;
 
     const easeInOutCubic = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
     const easeOutQuad = (t) => 1 - (1 - t) * (1 - t);
 
     try {
-      const { data, error: rpcError } = await supabase.rpc('sortear_ganador', { p_pin: pinAdmin });
+      const { data, error: rpcError } = await supabase.rpc('sortear_ganador', {
+        p_pin: pinAdmin,
+        p_es_ganador: esTiroGanador
+      });
+
       if (rpcError) {
         if (rpcError.message?.toLowerCase().includes('pin')) {
           sessionStorage.removeItem('pin_tombola');
@@ -552,25 +638,25 @@ export default function GarraSorteo() {
       }
 
       setTotalEnUrna(data.total_restantes);
-      const datosGanador = data.ganador;
+      const datosSeleccionado = data.ganador;
 
-      let skinGanador = { color: '#e11d48', accesorio: 'santa', expresion: 'feliz' };
-      if (datosGanador.skin && typeof datosGanador.skin === 'string') {
-        try { skinGanador = JSON.parse(datosGanador.skin); } catch {}
-      } else if (datosGanador.skin && typeof datosGanador.skin === 'object') {
-        skinGanador = datosGanador.skin;
+      let skinSeleccionado = { color: '#e11d48', accesorio: 'santa', expresion: 'feliz' };
+      if (datosSeleccionado.skin && typeof datosSeleccionado.skin === 'string') {
+        try { skinSeleccionado = JSON.parse(datosSeleccionado.skin); } catch {}
+      } else if (datosSeleccionado.skin && typeof datosSeleccionado.skin === 'object') {
+        skinSeleccionado = datosSeleccionado.skin;
       }
 
-      const monoGanador = {
-        id: datosGanador.id,
-        folio: datosGanador.folio_brazalete,
-        nombre: datosGanador.nombre,
-        numero: datosGanador.numero_empleado,
-        skin: skinGanador
+      const monoSeleccionado = {
+        id: datosSeleccionado.id,
+        folio: datosSeleccionado.folio_brazalete,
+        nombre: datosSeleccionado.nombre,
+        numero: datosSeleccionado.numero_empleado,
+        skin: skinSeleccionado
       };
 
       const g = garraRef.current;
-      const monoEnCaja = peluchesRef.current.find((p) => p.id === monoGanador.id);
+      const monoEnCaja = peluchesRef.current.find((p) => p.id === monoSeleccionado.id);
       const fallback = peluchesRef.current[Math.floor(Math.random() * peluchesRef.current.length)];
       const objetivo = monoEnCaja || fallback;
 
@@ -608,9 +694,10 @@ export default function GarraSorteo() {
           } else {
             g.pinzaAbierta = false;
             setTimeout(() => {
-              g.monoAtrapado = monoGanador;
+              g.monoAtrapado = monoSeleccionado;
 
-              peluchesRef.current = peluchesRef.current.filter((item) => item.id !== monoGanador.id);
+              // Se elimina visualmente de la urna tanto si gana como si queda descartado
+              peluchesRef.current = peluchesRef.current.filter((item) => item.id !== monoSeleccionado.id);
               if (!monoEnCaja && fallback) {
                 peluchesRef.current = peluchesRef.current.filter((item) => item.id !== fallback.id);
               }
@@ -662,8 +749,10 @@ export default function GarraSorteo() {
       const soltarEnBota = () => {
         g.pinzaAbierta = true;
         g.monoAtrapado = null;
+        // Si NO es el tiro ganador, al caer en la bota se transforma en un pedazo de carbón
         g.monoCayendo = {
-          mono: monoGanador,
+          mono: monoSeleccionado,
+          esCarbon: !esTiroGanador,
           x: BOCA_BOTA_X,
           y: g.y + 38,
           rot: 0,
@@ -684,19 +773,29 @@ export default function GarraSorteo() {
             requestAnimationFrame(animCaer);
           } else {
             g.monoCayendo = null;
-            setGanador(monoGanador);
-            setMostrarBannerGanador(true);
-            setHistorialGanadores((prev) =>
-              prev.some((item) => item.id === monoGanador.id)
-                ? prev
-                : [{ ...monoGanador, turno: prev.length + 1 }, ...prev]
-            );
+
+            if (esTiroGanador) {
+              setGanador(monoSeleccionado);
+              setIntentoActualRonda(0);
+              setHistorialGanadores((prev) =>
+                prev.some((item) => item.id === monoSeleccionado.id)
+                  ? prev
+                  : [{ ...monoSeleccionado, turno: prev.length + 1 }, ...prev]
+              );
+
+              import('canvas-confetti')
+                .then((c) => (c.default || c)({ particleCount: 220, spread: 100, origin: { y: 0.6 } }))
+                .catch(() => {});
+            } else {
+              setIntentoActualRonda(siguienteIntento);
+              setDescartadoReciente({
+                ...monoSeleccionado,
+                intento: siguienteIntento,
+                objetivo: tiroGanadorObjetivo
+              });
+            }
+
             setJugando(false);
-
-            import('canvas-confetti')
-              .then((c) => (c.default || c)({ particleCount: 220, spread: 100, origin: { y: 0.6 } }))
-              .catch(() => {});
-
             cargarParticipantesActivos();
           }
         };
@@ -717,7 +816,6 @@ export default function GarraSorteo() {
     }
   };
 
-  // Pantalla de bloqueo por PIN antes de mostrar la cabina de sorteo
   if (!pinDesbloqueado) {
     return (
       <main
@@ -738,7 +836,7 @@ export default function GarraSorteo() {
           onSubmit={handleDesbloquear}
           style={{
             width: '100%',
-            maxWidth: '380px',
+            maxWidth: '390px',
             backgroundColor: 'rgba(15, 23, 42, 0.92)',
             border: '2px solid #fbbf24',
             borderRadius: '24px',
@@ -771,7 +869,7 @@ export default function GarraSorteo() {
               Cabina de Control Tómbola
             </h2>
             <p style={{ margin: '6px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
-              Acceso restringido. Ingresa el PIN de administrador.
+              Configura el PIN y en qué tiro saldrá el ganador.
             </p>
           </div>
 
@@ -790,27 +888,59 @@ export default function GarraSorteo() {
             </div>
           )}
 
-          <input
-            type="password"
-            placeholder="PIN de acceso"
-            value={pinInput}
-            onChange={(e) => setPinInput(e.target.value)}
-            autoFocus
-            style={{
-              width: '100%',
-              boxSizing: 'border-box',
-              backgroundColor: 'rgba(2, 6, 23, 0.9)',
-              border: '2px solid rgba(251, 191, 36, 0.45)',
-              borderRadius: '14px',
-              padding: '12px',
-              fontSize: '16px',
-              color: '#ffffff',
-              textAlign: 'center',
-              fontFamily: 'monospace',
-              letterSpacing: '3px',
-              outline: 'none',
-            }}
-          />
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ display: 'block', fontSize: '11px', fontFamily: 'monospace', color: '#fde68a', marginBottom: '6px' }}>
+              PIN DE ADMINISTRADOR
+            </label>
+            <input
+              type="password"
+              placeholder="PIN de acceso"
+              value={pinInput}
+              onChange={(e) => setPinInput(e.target.value)}
+              autoFocus
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                backgroundColor: 'rgba(2, 6, 23, 0.9)',
+                border: '2px solid rgba(251, 191, 36, 0.45)',
+                borderRadius: '14px',
+                padding: '12px',
+                fontSize: '16px',
+                color: '#ffffff',
+                textAlign: 'center',
+                fontFamily: 'monospace',
+                letterSpacing: '3px',
+                outline: 'none',
+              }}
+            />
+          </div>
+
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ display: 'block', fontSize: '11px', fontFamily: 'monospace', color: '#fde68a', marginBottom: '6px' }}>
+              ¿EN QUÉ TIRO SALE EL GANADOR? (Ej. 1, 3, 5)
+            </label>
+            <input
+              type="number"
+              min="1"
+              max="50"
+              value={tiroObjetivoInput}
+              onChange={(e) => setTiroObjetivoInput(e.target.value)}
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                backgroundColor: 'rgba(2, 6, 23, 0.9)',
+                border: '2px solid rgba(251, 191, 36, 0.45)',
+                borderRadius: '14px',
+                padding: '10px',
+                fontSize: '16px',
+                color: '#fbbf24',
+                fontWeight: 800,
+                textAlign: 'center',
+                fontFamily: 'monospace',
+                outline: 'none',
+              }}
+            />
+          </div>
 
           <button
             type="submit"
@@ -852,7 +982,7 @@ export default function GarraSorteo() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'space-between',
-        padding: '14px 20px 22px 20px',
+        padding: '14px 20px 26px 20px',
         boxSizing: 'border-box',
         position: 'relative',
         overflowX: 'hidden',
@@ -868,11 +998,9 @@ export default function GarraSorteo() {
             50% { box-shadow: 0 18px 55px rgba(0,0,0,0.95), 0 0 42px rgba(251, 191, 36, 0.65); }
           }
 
-          @keyframes entradaGanador {
-            0% { opacity: 0; transform: translateX(-50%) scale(0.85) translateY(15px); }
-            12% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
-            88% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
-            100% { opacity: 0; transform: translateX(-50%) scale(0.95) translateY(10px); }
+          @keyframes entradaFija {
+            0% { opacity: 0; transform: translateX(-50%) scale(0.88) translateY(15px); }
+            100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
           }
 
           .btn-pantalla-completa {
@@ -900,8 +1028,56 @@ export default function GarraSorteo() {
             background-color: rgba(30, 41, 59, 0.95);
             transform: scale(1.04);
           }
+
+          .control-tiro-superior {
+            position: fixed;
+            top: 16px;
+            left: 16px;
+            z-index: 40;
+            background-color: rgba(15, 23, 42, 0.85);
+            backdrop-filter: blur(8px);
+            border: 2px solid rgba(251, 191, 36, 0.5);
+            color: #fde68a;
+            border-radius: 12px;
+            padding: 6px 12px;
+            font-family: monospace;
+            font-size: 12px;
+            font-weight: 700;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          }
         `}
       </style>
+
+      {/* Selector rápido en vivo para cambiar en qué tiro (X) sale el ganador */}
+      <div className="control-tiro-superior" title="Número de tiro en el que sale el ganador">
+        <span>Ganador en tiro #</span>
+        <input
+          type="number"
+          min="1"
+          max="50"
+          disabled={jugando}
+          value={tiroGanadorObjetivo}
+          onChange={(e) => handleCambiarTiroObjetivo(e.target.value)}
+          style={{
+            width: '46px',
+            backgroundColor: '#020617',
+            border: '1px solid #fbbf24',
+            borderRadius: '8px',
+            color: '#fbbf24',
+            fontWeight: 900,
+            textAlign: 'center',
+            padding: '4px',
+            fontFamily: 'monospace',
+          }}
+        />
+        {tiroGanadorObjetivo > 1 && (
+          <span style={{ color: '#38bdf8' }}>
+            ({intentoActualRonda}/{tiroGanadorObjetivo})
+          </span>
+        )}
+      </div>
 
       <button
         type="button"
@@ -1005,7 +1181,74 @@ export default function GarraSorteo() {
             }}
           />
 
-          {ganador && mostrarBannerGanador && !jugando && (
+          {/* Aviso de pedazo de carbón cuando no fue el tiro ganador */}
+          {descartadoReciente && !jugando && (
+            <div
+              style={{
+                position: 'absolute',
+                bottom: '22px',
+                left: '50%',
+                transform: 'translateX(-50%)',
+                width: '88%',
+                maxWidth: '480px',
+                backgroundColor: 'rgba(15, 23, 42, 0.94)',
+                backdropFilter: 'blur(14px)',
+                WebkitBackdropFilter: 'blur(14px)',
+                border: '3px solid #64748b',
+                borderRadius: '24px',
+                padding: '14px 20px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '16px',
+                boxShadow: '0 18px 45px rgba(0, 0, 0, 0.95)',
+                animation: 'entradaFija 0.35s ease-out forwards',
+                zIndex: 30,
+              }}
+            >
+              {/* Ícono SVG de pedazo de carbón pixel-art */}
+              <svg width="64" height="64" viewBox="0 0 16 16" style={{ imageRendering: 'pixelated', flexShrink: 0 }}>
+                <rect x="4" y="2" width="2" height="2" fill="#94a3b8" opacity="0.6" />
+                <rect x="10" y="1" width="2" height="2" fill="#94a3b8" opacity="0.6" />
+                <rect x="4" y="5" width="8" height="8" fill="#1e293b" />
+                <rect x="3" y="7" width="10" height="5" fill="#1e293b" />
+                <rect x="5" y="11" width="7" height="3" fill="#090d16" />
+                <rect x="5" y="6" width="3" height="2" fill="#475569" />
+                <rect x="6" y="6" width="1" height="1" fill="#cbd5e1" />
+              </svg>
+
+              <div style={{ textAlign: 'left', flex: 1, minWidth: 0 }}>
+                <span
+                  style={{
+                    fontFamily: 'monospace',
+                    fontSize: '13px',
+                    fontWeight: 900,
+                    color: '#94a3b8',
+                    textTransform: 'uppercase',
+                    display: 'block',
+                  }}
+                >
+                  🪨 ¡Carbón en la Bota! (Intento {descartadoReciente.intento} de {descartadoReciente.objetivo})
+                </span>
+                <div
+                  style={{
+                    fontSize: '18px',
+                    fontWeight: 800,
+                    color: '#e2e8f0',
+                    marginTop: '2px',
+                    wordBreak: 'break-word',
+                  }}
+                >
+                  {descartadoReciente.nombre}
+                </div>
+                <span style={{ fontSize: '12px', color: '#94a3b8', fontFamily: 'monospace' }}>
+                  Descartado de la urna • Presiona de nuevo
+                </span>
+              </div>
+            </div>
+          )}
+
+          {/* Layer del ganador: permanece fijo hasta volver a presionar "USAR TOMBOLA" */}
+          {ganador && !jugando && (
             <div
               style={{
                 position: 'absolute',
@@ -1014,7 +1257,7 @@ export default function GarraSorteo() {
                 transform: 'translateX(-50%)',
                 width: '90%',
                 maxWidth: '540px',
-                backgroundColor: 'rgba(15, 23, 42, 0.94)',
+                backgroundColor: 'rgba(15, 23, 42, 0.95)',
                 backdropFilter: 'blur(14px)',
                 WebkitBackdropFilter: 'blur(14px)',
                 border: '3px solid #10b981',
@@ -1024,7 +1267,7 @@ export default function GarraSorteo() {
                 alignItems: 'center',
                 gap: '18px',
                 boxShadow: '0 20px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(16, 185, 129, 0.45)',
-                animation: 'entradaGanador 6s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                animation: 'entradaFija 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards',
                 zIndex: 30,
               }}
             >
@@ -1233,15 +1476,26 @@ export default function GarraSorteo() {
         </div>
       )}
 
-      <div style={{ width: '100%', maxWidth: '420px', zIndex: 20 }}>
+      {/* Botonera inferior: USAR TOMBOLA + Siguiente Sorteo */}
+      <div
+        style={{
+          width: '100%',
+          maxWidth: '640px',
+          display: 'flex',
+          flexWrap: 'wrap',
+          gap: '12px',
+          justifyContent: 'center',
+          zIndex: 20,
+        }}
+      >
         <button
           type="button"
           onClick={jugarGarra}
           disabled={jugando}
           style={{
-            width: '100%',
+            flex: '1 1 280px',
             minHeight: '58px',
-            padding: '14px 28px',
+            padding: '14px 24px',
             background: 'linear-gradient(90deg, #dc2626 0%, #e11d48 50%, #d97706 100%)',
             border: '2px solid #fbbf24',
             borderRadius: '20px',
@@ -1263,6 +1517,37 @@ export default function GarraSorteo() {
         >
           <Play size={22} className={jugando ? 'animate-spin' : 'fill-white'} />
           <span>{jugando ? 'Atrapando Totalplayer...' : 'USAR TOMBOLA'}</span>
+        </button>
+
+        <button
+          type="button"
+          onClick={handleSiguienteSorteo}
+          disabled={jugando}
+          style={{
+            flex: '0 1 auto',
+            minHeight: '58px',
+            padding: '14px 20px',
+            backgroundColor: 'rgba(15, 23, 42, 0.92)',
+            border: '2px solid rgba(251, 191, 36, 0.65)',
+            borderRadius: '20px',
+            color: '#fde68a',
+            fontFamily: 'monospace',
+            fontWeight: 800,
+            fontSize: '14px',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            cursor: jugando ? 'not-allowed' : 'pointer',
+            opacity: jugando ? 0.5 : 1,
+            transition: 'all 0.15s',
+          }}
+          title="Limpia la lista visual de ganadores y reinicia el conteo de intentos para un nuevo premio"
+        >
+          <RotateCcw size={18} />
+          <span>Siguiente Sorteo</span>
         </button>
       </div>
     </main>
