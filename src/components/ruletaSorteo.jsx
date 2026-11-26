@@ -92,11 +92,12 @@ export default function GarraSorteo() {
   const canvasRef = useRef(null);
   const bgImgRef = useRef(null);
 
-  // Control de acceso con PIN y configuración de tiro ganador (X)
   const [pinAdmin, setPinAdmin] = useState(() => sessionStorage.getItem('pin_tombola') || '');
   const [pinInput, setPinInput] = useState('');
   const [tiroObjetivoInput, setTiroObjetivoInput] = useState(() => sessionStorage.getItem('tiro_objetivo_tombola') || '1');
-  const [tiroGanadorObjetivo, setTiroGanadorObjetivo] = useState(() => Math.max(1, parseInt(sessionStorage.getItem('tiro_objetivo_tombola') || '1', 10)));
+  const [tiroGanadorObjetivo, setTiroGanadorObjetivo] = useState(() =>
+    Math.max(1, parseInt(sessionStorage.getItem('tiro_objetivo_tombola') || '1', 10))
+  );
   const [intentoActualRonda, setIntentoActualRonda] = useState(0);
 
   const [pinDesbloqueado, setPinDesbloqueado] = useState(() => Boolean(sessionStorage.getItem('pin_tombola')));
@@ -141,7 +142,6 @@ export default function GarraSorteo() {
     return () => document.removeEventListener('fullscreenchange', onFsChange);
   }, []);
 
-  // El aviso de descartado sí se oculta solo a los 4 segundos; el banner de GANADOR queda fijo hasta volver a usar la tómbola
   useEffect(() => {
     if (!descartadoReciente) return;
     const timer = setTimeout(() => {
@@ -174,7 +174,9 @@ export default function GarraSorteo() {
 
       let skin = { color: '#e11d48', accesorio: 'santa', expresion: 'feliz' };
       if (part.skin && typeof part.skin === 'string') {
-        try { skin = JSON.parse(part.skin); } catch {}
+        try {
+          skin = JSON.parse(part.skin);
+        } catch {}
       } else if (part.skin && typeof part.skin === 'object') {
         skin = part.skin;
       }
@@ -185,9 +187,9 @@ export default function GarraSorteo() {
       return {
         id: part.id,
         skin,
-        x: 325 + (col * 29) + (Math.sin(i * 2.3) * 6),
-        baseY: 488 - (fila * 13) + (Math.cos(i * 1.8) * 3),
-        y: 488 - (fila * 13),
+        x: 325 + col * 29 + Math.sin(i * 2.3) * 6,
+        baseY: 488 - fila * 13 + Math.cos(i * 1.8) * 3,
+        y: 488 - fila * 13,
         vx: (0.35 + ((i * 7) % 10) * 0.06) * (i % 2 === 0 ? 1 : -1),
         fase: i * 0.85,
         rotacion: 0
@@ -198,7 +200,6 @@ export default function GarraSorteo() {
   const cargarParticipantesActivos = async () => {
     try {
       const { data, error: dbError } = await supabase.rpc('obtener_avatares_urna');
-
       if (dbError) throw dbError;
 
       if (data) {
@@ -221,30 +222,25 @@ export default function GarraSorteo() {
     ctx.rotate(rot);
 
     const s = escala;
-    // Humo / ceniza alrededor del carbón
     ctx.fillStyle = 'rgba(148, 163, 184, 0.55)';
     ctx.fillRect(-4 * s, -8 * s, 2 * s, 2 * s);
     ctx.fillRect(3 * s, -7 * s, 2 * s, 2 * s);
     ctx.fillRect(0, -10 * s, 2 * s, 2 * s);
 
-    // Sombra base
     ctx.fillStyle = 'rgba(0, 0, 0, 0.55)';
     ctx.fillRect(-5 * s, 5 * s, 10 * s, 2 * s);
 
-    // Cuerpo irregular de carbón pixel-art
     ctx.fillStyle = '#1e293b';
     ctx.fillRect(-5 * s, -3 * s, 10 * s, 7 * s);
     ctx.fillRect(-4 * s, -5 * s, 8 * s, 10 * s);
     ctx.fillRect(-6 * s, -1 * s, 12 * s, 4 * s);
 
-    // Sombras profundas del carbón
     ctx.fillStyle = '#090d16';
     ctx.fillRect(-4 * s, 1 * s, 8 * s, 3 * s);
     ctx.fillRect(2 * s, -3 * s, 3 * s, 5 * s);
     ctx.fillRect(-6 * s, -1 * s, 1 * s, 4 * s);
     ctx.fillRect(5 * s, -1 * s, 1 * s, 4 * s);
 
-    // Facetas y brillos minerales gris/carbón
     ctx.fillStyle = '#475569';
     ctx.fillRect(-3 * s, -4 * s, 3 * s, 2 * s);
     ctx.fillRect(-4 * s, -1 * s, 2 * s, 2 * s);
@@ -456,7 +452,7 @@ export default function GarraSorteo() {
       const anguloObjetivo = Math.max(-0.22, Math.min(0.22, -g.vx * 0.022));
       g.angulo += (anguloObjetivo - g.angulo) * 0.16;
 
-      const largoCable = Math.max(0, (g.y - 12) - (RIEL_Y + 18));
+      const largoCable = Math.max(0, g.y - 12 - (RIEL_Y + 18));
       const offsetPenduloX = Math.sin(g.angulo) * largoCable * 0.45;
       const cabezalX = g.x + offsetPenduloX;
       const cabezalY = g.y;
@@ -596,7 +592,6 @@ export default function GarraSorteo() {
     sessionStorage.setItem('tiro_objetivo_tombola', String(num));
   };
 
-  // Botón "Siguiente Sorteo": limpia solo el log visual de ganadores y reinicia el contador de intentos de la ronda
   const handleSiguienteSorteo = () => {
     if (jugando) return;
     setHistorialGanadores([]);
@@ -610,7 +605,6 @@ export default function GarraSorteo() {
     if (jugando) return;
     setJugando(true);
     setError('');
-    // El layer del ganador anterior se oculta únicamente al volver a presionar "USAR TOMBOLA"
     setGanador(null);
     setDescartadoReciente(null);
 
@@ -642,7 +636,9 @@ export default function GarraSorteo() {
 
       let skinSeleccionado = { color: '#e11d48', accesorio: 'santa', expresion: 'feliz' };
       if (datosSeleccionado.skin && typeof datosSeleccionado.skin === 'string') {
-        try { skinSeleccionado = JSON.parse(datosSeleccionado.skin); } catch {}
+        try {
+          skinSeleccionado = JSON.parse(datosSeleccionado.skin);
+        } catch {}
       } else if (datosSeleccionado.skin && typeof datosSeleccionado.skin === 'object') {
         skinSeleccionado = datosSeleccionado.skin;
       }
@@ -696,7 +692,6 @@ export default function GarraSorteo() {
             setTimeout(() => {
               g.monoAtrapado = monoSeleccionado;
 
-              // Se elimina visualmente de la urna tanto si gana como si queda descartado
               peluchesRef.current = peluchesRef.current.filter((item) => item.id !== monoSeleccionado.id);
               if (!monoEnCaja && fallback) {
                 peluchesRef.current = peluchesRef.current.filter((item) => item.id !== fallback.id);
@@ -749,7 +744,6 @@ export default function GarraSorteo() {
       const soltarEnBota = () => {
         g.pinzaAbierta = true;
         g.monoAtrapado = null;
-        // Si NO es el tiro ganador, al caer en la bota se transforma en un pedazo de carbón
         g.monoCayendo = {
           mono: monoSeleccionado,
           esCarbon: !esTiroGanador,
@@ -829,7 +823,7 @@ export default function GarraSorteo() {
           alignItems: 'center',
           justifyContent: 'center',
           padding: '20px',
-          boxSizing: 'border-box',
+          boxSizing: 'border-box'
         }}
       >
         <form
@@ -845,7 +839,7 @@ export default function GarraSorteo() {
             boxShadow: '0 20px 50px rgba(0,0,0,0.85)',
             display: 'flex',
             flexDirection: 'column',
-            gap: '16px',
+            gap: '16px'
           }}
         >
           <div
@@ -858,7 +852,7 @@ export default function GarraSorteo() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              margin: '0 auto',
+              margin: '0 auto'
             }}
           >
             <Lock size={28} color="#fbbf24" />
@@ -881,7 +875,7 @@ export default function GarraSorteo() {
                 border: '1px solid #fb7185',
                 color: '#fecdd3',
                 borderRadius: '10px',
-                fontSize: '12px',
+                fontSize: '12px'
               }}
             >
               {errorPin}
@@ -910,7 +904,7 @@ export default function GarraSorteo() {
                 textAlign: 'center',
                 fontFamily: 'monospace',
                 letterSpacing: '3px',
-                outline: 'none',
+                outline: 'none'
               }}
             />
           </div>
@@ -937,7 +931,7 @@ export default function GarraSorteo() {
                 fontWeight: 800,
                 textAlign: 'center',
                 fontFamily: 'monospace',
-                outline: 'none',
+                outline: 'none'
               }}
             />
           </div>
@@ -959,7 +953,7 @@ export default function GarraSorteo() {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              gap: '8px',
+              gap: '8px'
             }}
           >
             <KeyRound size={18} />
@@ -986,7 +980,7 @@ export default function GarraSorteo() {
         boxSizing: 'border-box',
         position: 'relative',
         overflowX: 'hidden',
-        userSelect: 'none',
+        userSelect: 'none'
       }}
     >
       <style>
@@ -998,9 +992,9 @@ export default function GarraSorteo() {
             50% { box-shadow: 0 18px 55px rgba(0,0,0,0.95), 0 0 42px rgba(251, 191, 36, 0.65); }
           }
 
-          @keyframes entradaFija {
-            0% { opacity: 0; transform: translateX(-50%) scale(0.88) translateY(15px); }
-            100% { opacity: 1; transform: translateX(-50%) scale(1) translateY(0); }
+          @keyframes entradaCentrada {
+            0% { opacity: 0; transform: translate(-50%, -50%) scale(0.88); }
+            100% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
           }
 
           .btn-pantalla-completa {
@@ -1010,6 +1004,7 @@ export default function GarraSorteo() {
             z-index: 40;
             background-color: rgba(15, 23, 42, 0.85);
             backdrop-filter: blur(8px);
+            WebkitBackdropFilter: blur(8px);
             border: 2px solid rgba(251, 191, 36, 0.5);
             color: #fde68a;
             border-radius: 12px;
@@ -1028,56 +1023,8 @@ export default function GarraSorteo() {
             background-color: rgba(30, 41, 59, 0.95);
             transform: scale(1.04);
           }
-
-          .control-tiro-superior {
-            position: fixed;
-            top: 16px;
-            left: 16px;
-            z-index: 40;
-            background-color: rgba(15, 23, 42, 0.85);
-            backdrop-filter: blur(8px);
-            border: 2px solid rgba(251, 191, 36, 0.5);
-            color: #fde68a;
-            border-radius: 12px;
-            padding: 6px 12px;
-            font-family: monospace;
-            font-size: 12px;
-            font-weight: 700;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-          }
         `}
       </style>
-
-      {/* Selector rápido en vivo para cambiar en qué tiro (X) sale el ganador */}
-      <div className="control-tiro-superior" title="Número de tiro en el que sale el ganador">
-        <span>Ganador en tiro #</span>
-        <input
-          type="number"
-          min="1"
-          max="50"
-          disabled={jugando}
-          value={tiroGanadorObjetivo}
-          onChange={(e) => handleCambiarTiroObjetivo(e.target.value)}
-          style={{
-            width: '46px',
-            backgroundColor: '#020617',
-            border: '1px solid #fbbf24',
-            borderRadius: '8px',
-            color: '#fbbf24',
-            fontWeight: 900,
-            textAlign: 'center',
-            padding: '4px',
-            fontFamily: 'monospace',
-          }}
-        />
-        {tiroGanadorObjetivo > 1 && (
-          <span style={{ color: '#38bdf8' }}>
-            ({intentoActualRonda}/{tiroGanadorObjetivo})
-          </span>
-        )}
-      </div>
 
       <button
         type="button"
@@ -1089,6 +1036,7 @@ export default function GarraSorteo() {
         <span>{esFullscreen ? 'Salir' : 'Pantalla Completa'}</span>
       </button>
 
+      {/* Encabezado */}
       <header style={{ textAlign: 'center', zIndex: 10, width: '100%', maxWidth: '1280px' }}>
         <div
           style={{
@@ -1100,7 +1048,7 @@ export default function GarraSorteo() {
             padding: '5px 18px',
             borderRadius: '999px',
             marginBottom: '6px',
-            boxShadow: '0 4px 15px rgba(0,0,0,0.6)',
+            boxShadow: '0 4px 15px rgba(0,0,0,0.6)'
           }}
         >
           <Sparkles size={15} color="#fbbf24" />
@@ -1111,7 +1059,7 @@ export default function GarraSorteo() {
               fontWeight: 800,
               letterSpacing: '2px',
               color: '#fde68a',
-              textTransform: 'uppercase',
+              textTransform: 'uppercase'
             }}
           >
             ¡Mucha Suerte a Todos!
@@ -1127,7 +1075,7 @@ export default function GarraSorteo() {
             color: '#fbbf24',
             textShadow: '0 4px 14px rgba(220, 38, 38, 0.95), 0 3px 6px #000',
             margin: 0,
-            lineHeight: 1.05,
+            lineHeight: 1.05
           }}
         >
           Tómbola Navideña Red Central
@@ -1141,7 +1089,7 @@ export default function GarraSorteo() {
               fontFamily: 'monospace',
               fontWeight: 700,
               margin: '6px 0 0 0',
-              textShadow: '0 2px 4px #000',
+              textShadow: '0 2px 4px #000'
             }}
           >
             🎄 {totalEnUrna} Totalplayers participando en la caja 🎄
@@ -1149,6 +1097,7 @@ export default function GarraSorteo() {
         )}
       </header>
 
+      {/* Zona Central: Cabina a la izquierda + Lista de Ganadores a la derecha con altura igualada */}
       <div
         style={{
           position: 'relative',
@@ -1160,7 +1109,7 @@ export default function GarraSorteo() {
           width: '100%',
           maxWidth: '1540px',
           margin: '10px 0',
-          zIndex: 10,
+          zIndex: 10
         }}
       >
         <div style={{ position: 'relative', display: 'flex', justifyContent: 'center' }}>
@@ -1169,7 +1118,7 @@ export default function GarraSorteo() {
             width={CANVAS_W}
             height={CANVAS_H}
             style={{
-              width: 'min(68vw, calc(66dvh * 1.777))',
+              width: 'min(66vw, calc(65dvh * 1.777))',
               minWidth: '320px',
               height: 'auto',
               aspectRatio: '16 / 9',
@@ -1177,36 +1126,35 @@ export default function GarraSorteo() {
               border: '4px solid #fbbf24',
               animation: 'brilloDorado 4s infinite ease-in-out',
               imageRendering: 'pixelated',
-              display: 'block',
+              display: 'block'
             }}
           />
 
-          {/* Aviso de pedazo de carbón cuando no fue el tiro ganador */}
+          {/* Tarjeta centrada en la cabina para carbón (descartado) */}
           {descartadoReciente && !jugando && (
             <div
               style={{
                 position: 'absolute',
-                bottom: '22px',
+                top: '50%',
                 left: '50%',
-                transform: 'translateX(-50%)',
-                width: '88%',
-                maxWidth: '480px',
-                backgroundColor: 'rgba(15, 23, 42, 0.94)',
-                backdropFilter: 'blur(14px)',
-                WebkitBackdropFilter: 'blur(14px)',
+                transform: 'translate(-50%, -50%)',
+                width: '86%',
+                maxWidth: '500px',
+                backgroundColor: 'rgba(15, 23, 42, 0.93)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
                 border: '3px solid #64748b',
                 borderRadius: '24px',
-                padding: '14px 20px',
+                padding: '18px 24px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '16px',
-                boxShadow: '0 18px 45px rgba(0, 0, 0, 0.95)',
-                animation: 'entradaFija 0.35s ease-out forwards',
-                zIndex: 30,
+                gap: '18px',
+                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.95)',
+                animation: 'entradaCentrada 0.35s ease-out forwards',
+                zIndex: 30
               }}
             >
-              {/* Ícono SVG de pedazo de carbón pixel-art */}
-              <svg width="64" height="64" viewBox="0 0 16 16" style={{ imageRendering: 'pixelated', flexShrink: 0 }}>
+              <svg width="70" height="70" viewBox="0 0 16 16" style={{ imageRendering: 'pixelated', flexShrink: 0 }}>
                 <rect x="4" y="2" width="2" height="2" fill="#94a3b8" opacity="0.6" />
                 <rect x="10" y="1" width="2" height="2" fill="#94a3b8" opacity="0.6" />
                 <rect x="4" y="5" width="8" height="8" fill="#1e293b" />
@@ -1224,18 +1172,18 @@ export default function GarraSorteo() {
                     fontWeight: 900,
                     color: '#94a3b8',
                     textTransform: 'uppercase',
-                    display: 'block',
+                    display: 'block'
                   }}
                 >
                   🪨 ¡Carbón en la Bota! (Intento {descartadoReciente.intento} de {descartadoReciente.objetivo})
                 </span>
                 <div
                   style={{
-                    fontSize: '18px',
-                    fontWeight: 800,
+                    fontSize: '20px',
+                    fontWeight: 900,
                     color: '#e2e8f0',
-                    marginTop: '2px',
-                    wordBreak: 'break-word',
+                    marginTop: '3px',
+                    wordBreak: 'break-word'
                   }}
                 >
                   {descartadoReciente.nombre}
@@ -1247,28 +1195,28 @@ export default function GarraSorteo() {
             </div>
           )}
 
-          {/* Layer del ganador: permanece fijo hasta volver a presionar "USAR TOMBOLA" */}
+          {/* Tarjeta del GANADOR centrada en la cabina (fija hasta volver a presionar USAR TOMBOLA) */}
           {ganador && !jugando && (
             <div
               style={{
                 position: 'absolute',
-                bottom: '22px',
+                top: '50%',
                 left: '50%',
-                transform: 'translateX(-50%)',
-                width: '90%',
-                maxWidth: '540px',
-                backgroundColor: 'rgba(15, 23, 42, 0.95)',
-                backdropFilter: 'blur(14px)',
-                WebkitBackdropFilter: 'blur(14px)',
+                transform: 'translate(-50%, -50%)',
+                width: '88%',
+                maxWidth: '560px',
+                backgroundColor: 'rgba(15, 23, 42, 0.92)',
+                backdropFilter: 'blur(12px)',
+                WebkitBackdropFilter: 'blur(12px)',
                 border: '3px solid #10b981',
                 borderRadius: '26px',
-                padding: '16px 24px',
+                padding: '20px 26px',
                 display: 'flex',
                 alignItems: 'center',
-                gap: '18px',
-                boxShadow: '0 20px 50px rgba(0, 0, 0, 0.95), 0 0 30px rgba(16, 185, 129, 0.45)',
-                animation: 'entradaFija 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards',
-                zIndex: 30,
+                gap: '20px',
+                boxShadow: '0 22px 55px rgba(0, 0, 0, 0.95), 0 0 32px rgba(16, 185, 129, 0.45)',
+                animation: 'entradaCentrada 0.45s cubic-bezier(0.16, 1, 0.3, 1) forwards',
+                zIndex: 30
               }}
             >
               <div style={{ flexShrink: 0 }}>
@@ -1276,7 +1224,7 @@ export default function GarraSorteo() {
                   color={ganador.skin?.color}
                   accesorio={ganador.skin?.accesorio}
                   expresion={ganador.skin?.expresion}
-                  tamano={84}
+                  tamano={92}
                 />
               </div>
 
@@ -1284,28 +1232,29 @@ export default function GarraSorteo() {
                 <span
                   style={{
                     fontFamily: "'Mountains of Christmas', cursive, serif",
-                    fontSize: '26px',
+                    fontSize: '28px',
                     fontWeight: 700,
                     color: '#34d399',
                     display: 'block',
-                    lineHeight: 1.1,
+                    lineHeight: 1.1
                   }}
                 >
                   ¡Ganador en la Bota! 🧦🎁
                 </span>
                 <div
                   style={{
-                    fontSize: 'clamp(18px, 2.2vw, 24px)',
+                    fontSize: 'clamp(19px, 2.3vw, 26px)',
                     fontWeight: 900,
                     color: '#ffffff',
                     marginTop: '4px',
                     lineHeight: 1.2,
                     wordBreak: 'break-word',
+                    textTransform: 'uppercase'
                   }}
                 >
                   {ganador.nombre}
                 </div>
-                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '6px', marginTop: '6px' }}>
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginTop: '8px' }}>
                   {ganador.folio && (
                     <span
                       style={{
@@ -1316,7 +1265,7 @@ export default function GarraSorteo() {
                         fontFamily: 'monospace',
                         fontSize: '13px',
                         color: '#6ee7b7',
-                        fontWeight: 900,
+                        fontWeight: 900
                       }}
                     >
                       Brazalete: {ganador.folio}
@@ -1325,13 +1274,13 @@ export default function GarraSorteo() {
                   <span
                     style={{
                       backgroundColor: 'rgba(2, 6, 23, 0.85)',
-                      border: '1px solid rgba(251, 191, 36, 0.4)',
+                      border: '1px solid rgba(251, 191, 36, 0.45)',
                       padding: '3px 10px',
                       borderRadius: '10px',
                       fontFamily: 'monospace',
                       fontSize: '13px',
                       color: '#fbbf24',
-                      fontWeight: 800,
+                      fontWeight: 800
                     }}
                   >
                     Emp: {ganador.numero}
@@ -1342,11 +1291,12 @@ export default function GarraSorteo() {
           )}
         </div>
 
+        {/* Panel derecho de Ganadores igualado a la altura de la cabina */}
         <aside
           style={{
             width: '320px',
             maxWidth: '92vw',
-            maxHeight: 'calc(66dvh)',
+            maxHeight: 'calc(65dvh)',
             backgroundColor: 'rgba(15, 23, 42, 0.88)',
             backdropFilter: 'blur(12px)',
             WebkitBackdropFilter: 'blur(12px)',
@@ -1355,7 +1305,7 @@ export default function GarraSorteo() {
             padding: '16px',
             display: 'flex',
             flexDirection: 'column',
-            boxShadow: '0 18px 45px rgba(0, 0, 0, 0.85)',
+            boxShadow: '0 18px 45px rgba(0, 0, 0, 0.85)'
           }}
         >
           <div
@@ -1363,7 +1313,7 @@ export default function GarraSorteo() {
               textAlign: 'center',
               borderBottom: '1px solid rgba(251, 191, 36, 0.3)',
               paddingBottom: '10px',
-              marginBottom: '12px',
+              marginBottom: '12px'
             }}
           >
             <h2
@@ -1374,7 +1324,7 @@ export default function GarraSorteo() {
                 color: '#fbbf24',
                 margin: 0,
                 lineHeight: 1.1,
-                textShadow: '0 2px 6px rgba(0,0,0,0.8)',
+                textShadow: '0 2px 6px rgba(0,0,0,0.8)'
               }}
             >
               🏆 Ganadores ({historialGanadores.length})
@@ -1388,7 +1338,7 @@ export default function GarraSorteo() {
               display: 'flex',
               flexDirection: 'column',
               gap: '10px',
-              paddingRight: '4px',
+              paddingRight: '4px'
             }}
           >
             {historialGanadores.length === 0 ? (
@@ -1399,7 +1349,7 @@ export default function GarraSorteo() {
                   fontSize: '12px',
                   textAlign: 'center',
                   margin: 'auto 0',
-                  padding: '20px 10px',
+                  padding: '20px 10px'
                 }}
               >
                 Aún no hay ganadores. ¡Presiona para iniciar el sorteo!
@@ -1415,7 +1365,7 @@ export default function GarraSorteo() {
                     backgroundColor: idx === 0 ? 'rgba(16, 185, 129, 0.16)' : 'rgba(2, 6, 23, 0.78)',
                     border: idx === 0 ? '1.5px solid #10b981' : '1px solid rgba(251, 191, 36, 0.25)',
                     borderRadius: '16px',
-                    padding: '10px 12px',
+                    padding: '10px 12px'
                   }}
                 >
                   <div style={{ flexShrink: 0 }}>
@@ -1432,7 +1382,7 @@ export default function GarraSorteo() {
                         fontFamily: 'monospace',
                         fontSize: '11px',
                         color: idx === 0 ? '#34d399' : '#fbbf24',
-                        fontWeight: 800,
+                        fontWeight: 800
                       }}
                     >
                       #{item.turno} • {item.folio ? `Folio ${item.folio}` : `Emp ${item.numero}`}
@@ -1440,11 +1390,12 @@ export default function GarraSorteo() {
                     <div
                       style={{
                         fontSize: '13px',
-                        fontWeight: 700,
+                        fontWeight: 800,
                         color: '#ffffff',
                         whiteSpace: 'nowrap',
                         overflow: 'hidden',
                         textOverflow: 'ellipsis',
+                        textTransform: 'uppercase'
                       }}
                       title={item.nombre}
                     >
@@ -1469,33 +1420,84 @@ export default function GarraSorteo() {
             borderRadius: '14px',
             fontFamily: 'monospace',
             fontSize: '13px',
-            fontWeight: 700,
+            fontWeight: 700
           }}
         >
           {error}
         </div>
       )}
 
-      {/* Botonera inferior: USAR TOMBOLA + Siguiente Sorteo */}
+      {/* Barra de controles inferior unificada: [Ganador en tiro #] + [USAR TOMBOLA] + [SIGUIENTE SORTEO] */}
       <div
         style={{
           width: '100%',
-          maxWidth: '640px',
+          maxWidth: '940px',
           display: 'flex',
           flexWrap: 'wrap',
-          gap: '12px',
+          alignItems: 'center',
           justifyContent: 'center',
-          zIndex: 20,
+          gap: '14px',
+          zIndex: 20
         }}
       >
+        {/* Selector de tiro ganador (X) */}
+        <div
+          title="Número de tiro en el que sale el ganador"
+          style={{
+            height: '58px',
+            padding: '0 16px',
+            backgroundColor: 'rgba(15, 23, 42, 0.92)',
+            border: '2px solid rgba(251, 191, 36, 0.5)',
+            borderRadius: '18px',
+            color: '#fde68a',
+            fontFamily: 'monospace',
+            fontSize: '13px',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '10px',
+            boxSizing: 'border-box'
+          }}
+        >
+          <span>Ganador en tiro #</span>
+          <input
+            type="number"
+            min="1"
+            max="50"
+            disabled={jugando}
+            value={tiroGanadorObjetivo}
+            onChange={(e) => handleCambiarTiroObjetivo(e.target.value)}
+            style={{
+              width: '48px',
+              backgroundColor: '#020617',
+              border: '1.5px solid #fbbf24',
+              borderRadius: '8px',
+              color: '#fbbf24',
+              fontWeight: 900,
+              fontSize: '14px',
+              textAlign: 'center',
+              padding: '4px',
+              fontFamily: 'monospace',
+              outline: 'none'
+            }}
+          />
+          {tiroGanadorObjetivo > 1 && (
+            <span style={{ color: '#38bdf8', fontSize: '12px' }}>
+              ({intentoActualRonda}/{tiroGanadorObjetivo})
+            </span>
+          )}
+        </div>
+
+        {/* Botón principal USAR TOMBOLA */}
         <button
           type="button"
           onClick={jugarGarra}
           disabled={jugando}
           style={{
             flex: '1 1 280px',
-            minHeight: '58px',
-            padding: '14px 24px',
+            maxWidth: '380px',
+            height: '58px',
+            padding: '0 26px',
             background: 'linear-gradient(90deg, #dc2626 0%, #e11d48 50%, #d97706 100%)',
             border: '2px solid #fbbf24',
             borderRadius: '20px',
@@ -1512,25 +1514,25 @@ export default function GarraSorteo() {
             gap: '12px',
             cursor: jugando ? 'not-allowed' : 'pointer',
             opacity: jugando ? 0.65 : 1,
-            transition: 'transform 0.15s',
+            transition: 'transform 0.15s'
           }}
         >
           <Play size={22} className={jugando ? 'animate-spin' : 'fill-white'} />
           <span>{jugando ? 'Atrapando Totalplayer...' : 'USAR TOMBOLA'}</span>
         </button>
 
+        {/* Botón SIGUIENTE SORTEO */}
         <button
           type="button"
           onClick={handleSiguienteSorteo}
           disabled={jugando}
           style={{
-            flex: '0 1 auto',
-            minHeight: '58px',
-            padding: '14px 20px',
+            height: '58px',
+            padding: '0 22px',
             backgroundColor: 'rgba(15, 23, 42, 0.92)',
-            border: '2px solid rgba(251, 191, 36, 0.65)',
+            border: '2px solid rgba(148, 163, 184, 0.45)',
             borderRadius: '20px',
-            color: '#fde68a',
+            color: '#e2e8f0',
             fontFamily: 'monospace',
             fontWeight: 800,
             fontSize: '14px',
@@ -1542,14 +1544,30 @@ export default function GarraSorteo() {
             gap: '8px',
             cursor: jugando ? 'not-allowed' : 'pointer',
             opacity: jugando ? 0.5 : 1,
-            transition: 'all 0.15s',
+            transition: 'all 0.15s'
           }}
           title="Limpia la lista visual de ganadores y reinicia el conteo de intentos para un nuevo premio"
         >
-          <RotateCcw size={18} />
+          <RotateCcw size={17} />
           <span>Siguiente Sorteo</span>
         </button>
       </div>
+
+      {/* Firma discreta en la esquina inferior derecha */}
+      <footer
+        style={{
+          position: 'fixed',
+          bottom: '6px',
+          right: '14px',
+          fontFamily: 'monospace',
+          fontSize: '10px',
+          color: 'rgba(148, 163, 184, 0.55)',
+          pointerEvents: 'none',
+          zIndex: 15
+        }}
+      >
+        Desarrollado por Mario Ortega Almaraz • Red Central 2026
+      </footer>
     </main>
   );
 }
