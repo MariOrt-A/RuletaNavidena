@@ -1246,7 +1246,7 @@ export default function GarraSorteo() {
                     fontSize: 'clamp(19px, 2.3vw, 26px)',
                     fontWeight: 900,
                     color: '#ffffff',
-                    marginTop: '4px',
+                    marginTop: '50px',
                     lineHeight: 1.2,
                     wordBreak: 'break-word',
                     textTransform: 'uppercase'
