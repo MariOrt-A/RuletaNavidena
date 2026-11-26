@@ -1200,7 +1200,7 @@ export default function GarraSorteo() {
             <div
               style={{
                 position: 'absolute',
-                top: '70%',
+                top: '40%',
                 left: '50%',
                 transform: 'translate(-50%, -50%)',
                 width: '88%',
