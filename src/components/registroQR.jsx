@@ -1,32 +1,31 @@
 import React, { useState, useEffect } from 'react';
-import FingerprintJS from '@fingerprintjs/fingerprintjs';
-import { ShieldAlert, Loader2, User, Hash, Ticket } from 'lucide-react';
+import { Ticket, Sparkles, CheckCircle2, AlertCircle, Hash, BadgeCheck } from 'lucide-react';
 import { supabase } from '../supabaseClient';
 
 const COLORES = [
-  { id: 'rojo', hex: '#e11d48', nombre: 'Rojo Carmesí' },
-  { id: 'verde', hex: '#16a34a', nombre: 'Verde Duende' },
-  { id: 'oro', hex: '#f59e0b', nombre: 'Dorado' },
-  { id: 'hielo', hex: '#0284c7', nombre: 'Azul Hielo' },
-  { id: 'morado', hex: '#9333ea', nombre: 'Uva Navideña' },
-  { id: 'nieve', hex: '#f8fafc', nombre: 'Muñeco Nieve' }
+  { id: '#e11d48', nombre: 'Rojo' },
+  { id: '#16a34a', nombre: 'Verde' },
+  { id: '#f59e0b', nombre: 'Dorado' },
+  { id: '#0284c7', nombre: 'Azul' },
+  { id: '#9333ea', nombre: 'Morado' },
+  { id: '#f8fafc', nombre: 'Nieve' },
 ];
 
 const ACCESORIOS = [
-  { id: 'santa', nombre: '🎅 Gorro Santa' },
-  { id: 'reno', nombre: '🦌 Cuernos Reno' },
-  { id: 'corona', nombre: '🎄 Corona Pino' },
-  { id: 'bufanda', nombre: '🧣 Bufanda Roja' },
-  { id: 'ninguno', nombre: '✖ Sin Accesorio' }
+  { id: 'santa', nombre: 'Gorro Santa' },
+  { id: 'reno', nombre: 'Reno' },
+  { id: 'corona', nombre: 'Corona' },
+  { id: 'bufanda', nombre: 'Bufanda' },
+  { id: 'ninguno', nombre: 'Sin extra' },
 ];
 
 const EXPRESIONES = [
-  { id: 'feliz', nombre: 'FELIZ' },
-  { id: 'cool', nombre: 'ROBOTO' },
-  { id: 'tierno', nombre: 'JUZGON' }
+  { id: 'feliz', nombre: 'Feliz' },
+  { id: 'cool', nombre: 'Cool' },
+  { id: 'tierno', nombre: 'Tierno' },
 ];
 
-export function MonoPixelArt({ color = '#e11d48', accesorio = 'santa', expresion = 'feliz', tamano = 130 }) {
+function AvatarPreview({ color, accesorio, expresion, tamano = 96 }) {
   return (
     <svg
       width={tamano}
@@ -34,17 +33,15 @@ export function MonoPixelArt({ color = '#e11d48', accesorio = 'santa', expresion
       viewBox="0 0 16 16"
       style={{
         imageRendering: 'pixelated',
-        WebkitOptimizeContrast: 'crisp-edges',
         display: 'block',
         margin: '0 auto',
-        filter: 'drop-shadow(0 12px 16px rgba(0, 0, 0, 0.85))'
+        filter: 'drop-shadow(0 8px 14px rgba(0,0,0,0.75))',
       }}
     >
       <rect x="3" y="14" width="10" height="2" fill="#000000" opacity="0.45" />
       <rect x="4" y="5" width="8" height="8" fill={color} />
       <rect x="5" y="4" width="6" height="10" fill={color} />
       <rect x="3" y="6" width="10" height="6" fill={color} />
-
       <rect x="5" y="3" width="6" height="1" fill="#0f172a" />
       <rect x="4" y="4" width="1" height="1" fill="#0f172a" />
       <rect x="11" y="4" width="1" height="1" fill="#0f172a" />
@@ -54,32 +51,27 @@ export function MonoPixelArt({ color = '#e11d48', accesorio = 'santa', expresion
       <rect x="13" y="6" width="1" height="6" fill="#0f172a" />
       <rect x="4" y="13" width="8" height="1" fill="#0f172a" />
 
-      {expresion === 'feliz' && (
-        <g fill="#0f172a">
-          <rect x="5" y="8" width="1" height="2" />
-          <rect x="10" y="8" width="1" height="2" />
-          <rect x="4" y="10" width="1" height="1" fill="#fb7185" />
-          <rect x="11" y="10" width="1" height="1" fill="#fb7185" />
-          <rect x="7" y="10" width="2" height="1" />
-        </g>
-      )}
-
-      {expresion === 'cool' && (
+      {expresion === 'cool' ? (
         <g>
           <rect x="4" y="8" width="8" height="2" fill="#0f172a" />
           <rect x="5" y="8" width="2" height="1" fill="#38bdf8" />
           <rect x="9" y="8" width="2" height="1" fill="#38bdf8" />
-          <rect x="7" y="11" width="2" height="1" fill="#0f172a" />
         </g>
-      )}
-
-      {expresion === 'tierno' && (
+      ) : expresion === 'tierno' ? (
         <g fill="#0f172a">
           <rect x="5" y="8" width="2" height="2" />
           <rect x="5" y="8" width="1" height="1" fill="#ffffff" />
           <rect x="9" y="8" width="2" height="2" />
           <rect x="9" y="8" width="1" height="1" fill="#ffffff" />
           <rect x="7" y="10" width="2" height="1" fill="#fb7185" />
+        </g>
+      ) : (
+        <g fill="#0f172a">
+          <rect x="5" y="8" width="1" height="2" />
+          <rect x="10" y="8" width="1" height="2" />
+          <rect x="4" y="10" width="1" height="1" fill="#fb7185" />
+          <rect x="11" y="10" width="1" height="1" fill="#fb7185" />
+          <rect x="7" y="10" width="2" height="1" />
         </g>
       )}
 
@@ -91,17 +83,13 @@ export function MonoPixelArt({ color = '#e11d48', accesorio = 'santa', expresion
           <rect x="12" y="3" width="1" height="1" fill="#ffffff" />
         </g>
       )}
-
       {accesorio === 'reno' && (
         <g fill="#78350f">
           <rect x="4" y="1" width="1" height="3" />
-          <rect x="3" y="1" width="1" height="1" />
           <rect x="11" y="1" width="1" height="3" />
-          <rect x="12" y="1" width="1" height="1" />
           <rect x="7" y="9" width="2" height="1" fill="#ef4444" />
         </g>
       )}
-
       {accesorio === 'corona' && (
         <g>
           <rect x="7" y="0" width="2" height="1" fill="#facc15" />
@@ -112,221 +100,188 @@ export function MonoPixelArt({ color = '#e11d48', accesorio = 'santa', expresion
           <rect x="10" y="3" width="1" height="1" fill="#facc15" />
         </g>
       )}
-
       {accesorio === 'bufanda' && (
         <g fill="#dc2626">
           <rect x="4" y="12" width="8" height="1" />
           <rect x="9" y="13" width="2" height="2" />
-          <rect x="9" y="14" width="2" height="1" fill="#ffffff" />
         </g>
       )}
     </svg>
   );
 }
 
+function obtenerDeviceHash() {
+  let hash = localStorage.getItem('rc_device_id');
+  if (!hash) {
+    const huella = [
+      navigator.userAgent,
+      navigator.language,
+      screen.width,
+      screen.height,
+      new Date().getTimezoneOffset(),
+      Math.random().toString(36).slice(2, 10),
+    ].join('|');
+    let acc = 0;
+    for (let i = 0; i < huella.length; i++) {
+      acc = (acc << 5) - acc + huella.charCodeAt(i);
+      acc |= 0;
+    }
+    hash = `dev_${Math.abs(acc).toString(16)}_${Date.now().toString(36)}`;
+    localStorage.setItem('rc_device_id', hash);
+  }
+  return hash;
+}
+
 export default function RegistroQR() {
-  const [nombres, setNombres] = useState('');
-  const [apellidoPaterno, setApellidoPaterno] = useState('');
-  const [apellidoMaterno, setApellidoMaterno] = useState('');
   const [numeroEmpleado, setNumeroEmpleado] = useState('');
   const [folioBrazalete, setFolioBrazalete] = useState('');
+  const [skin, setSkin] = useState({
+    color: '#e11d48',
+    accesorio: 'santa',
+    expresion: 'feliz',
+  });
 
-  const [colorSkin, setColorSkin] = useState(COLORES[0].hex);
-  const [accesorio, setAccesorio] = useState(ACCESORIOS[0].id);
-  const [expresion, setExpresion] = useState(EXPRESIONES[0].id);
-  const [deviceHash, setDeviceHash] = useState('');
-  const [cargandoFp, setCargandoFp] = useState(true);
   const [enviando, setEnviando] = useState(false);
-  const [registrado, setRegistrado] = useState(false);
   const [error, setError] = useState('');
+  const [boleto, setBoleto] = useState(() => {
+    try {
+      const guardado = localStorage.getItem('rc_boleto_2026');
+      return guardado ? JSON.parse(guardado) : null;
+    } catch {
+      return null;
+    }
+  });
 
   useEffect(() => {
-    const initFp = async () => {
-      try {
-        const fp = await FingerprintJS.load();
-        const res = await fp.get();
-        setDeviceHash(res.visitorId);
-      } catch {
-        setDeviceHash(`fp_${window.screen.width}x${window.screen.height}`);
-      } finally {
-        setCargandoFp(false);
-      }
-    };
-    initFp();
+    obtenerDeviceHash();
   }, []);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
+    if (enviando) return;
 
-    if (!nombres.trim() || !apellidoPaterno.trim() || !apellidoMaterno.trim()) {
-      setError('Completa tu Nombre(s), Apellido Paterno y Apellido Materno.');
-      return;
-    }
-    if (!numeroEmpleado.trim()) {
-      setError('Ingresa tu número de empleado.');
-      return;
-    }
-    if (!folioBrazalete.trim()) {
-      setError('Ingresa el folio de tu brazalete.');
+    const empLimpio = numeroEmpleado.trim();
+    const folioLimpio = folioBrazalete.trim().toUpperCase();
+
+    if (!empLimpio || !folioLimpio) {
+      setError('Ingresa tu número de empleado y el folio de tu brazalete.');
       return;
     }
 
     setEnviando(true);
+    setError('');
 
     try {
-      const { error: rpcError } = await supabase.rpc('registrar_participante_seguro', {
-        p_nombres: nombres.trim(),
-        p_apellido_paterno: apellidoPaterno.trim(),
-        p_apellido_materno: apellidoMaterno.trim(),
-        p_numero_empleado: numeroEmpleado.trim(),
-        p_folio_brazalete: folioBrazalete.trim(),
-        p_fingerprint: deviceHash,
-        p_skin: { color: colorSkin, accesorio, expresion }
+      const deviceHash = obtenerDeviceHash();
+      const { data, error: rpcError } = await supabase.rpc('registrar_participante_seguro', {
+        p_numero_empleado: empLimpio,
+        p_folio_brazalete: folioLimpio,
+        p_device_hash: deviceHash,
+        p_skin: skin,
       });
 
       if (rpcError) {
-        throw new Error(rpcError.message || 'Error al validar tu registro.');
+        throw new Error(rpcError.message || 'No se pudo completar el registro.');
       }
 
-      setRegistrado(true);
+      const registroConfirmado = {
+        ...data,
+        skin,
+      };
+      setBoleto(registroConfirmado);
+      localStorage.setItem('rc_boleto_2026', JSON.stringify(registroConfirmado));
     } catch (err) {
-      setError(err.message || 'Error al procesar el registro.');
+      setError(err.message);
     } finally {
       setEnviando(false);
     }
   };
 
-  if (registrado) {
-    const nombreCompleto = `${nombres.trim()} ${apellidoPaterno.trim()} ${apellidoMaterno.trim()}`;
+  if (boleto) {
     return (
       <main
         style={{
-          position: 'fixed',
-          inset: 0,
-          width: '100vw',
-          height: '100dvh',
+          minHeight: '100dvh',
+          width: '100%',
+          background: 'radial-gradient(circle at top, #1e1014 0%, #070a12 75%, #03050a 100%)',
+          color: '#ffffff',
+          fontFamily: "'Poppins', 'Segoe UI', sans-serif",
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          padding: '20px',
+          padding: '20px 16px 34px 16px',
           boxSizing: 'border-box',
-          fontFamily: "'Poppins', 'Segoe UI', sans-serif",
-          color: '#ffffff',
-          overflowY: 'auto',
-          zIndex: 50,
         }}
       >
-        <picture
-          style={{
-            position: 'fixed',
-            inset: 0,
-            width: '100vw',
-            height: '100dvh',
-            zIndex: 0,
-            pointerEvents: 'none',
-          }}
-        >
-          <source media="(min-width: 960px)" srcSet={`${import.meta.env.BASE_URL}taller-santa.jpg`} />
-          <img
-            src={`${import.meta.env.BASE_URL}taller_cel.jpg`}
-            alt="Taller de Santa"
-            style={{
-              width: '100%',
-              height: '100%',
-              objectFit: 'cover',
-              objectPosition: 'center top',
-              display: 'block',
-            }}
-          />
-        </picture>
-
         <div
           style={{
-            position: 'fixed',
-            inset: 0,
-            backgroundColor: 'rgba(5, 8, 18, 0.55)',
-            zIndex: 1,
-            pointerEvents: 'none',
-          }}
-        />
-
-        <div
-          style={{
-            position: 'relative',
-            zIndex: 10,
             width: '100%',
-            maxWidth: '400px',
-            margin: 'auto',
-            backgroundColor: 'rgba(15, 23, 42, 0.88)',
-            backdropFilter: 'blur(12px)',
-            WebkitBackdropFilter: 'blur(12px)',
-            border: '3px solid #10b981',
-            borderRadius: '28px',
-            padding: '28px 24px',
+            maxWidth: '410px',
+            backgroundColor: 'rgba(15, 23, 42, 0.94)',
+            border: '2.5px solid #10b981',
+            borderRadius: '26px',
+            padding: '26px 22px',
             textAlign: 'center',
-            boxShadow: '0 20px 50px rgba(0, 0, 0, 0.85), 0 0 25px rgba(16, 185, 129, 0.3)',
+            boxShadow: '0 20px 50px rgba(0,0,0,0.85), 0 0 28px rgba(16, 185, 129, 0.25)',
           }}
         >
-          <MonoPixelArt color={colorSkin} accesorio={accesorio} expresion={expresion} tamano={130} />
-          <h2
-            style={{
-              fontFamily: "'Mountains of Christmas', cursive, serif",
-              color: '#34d399',
-              fontSize: '34px',
-              lineHeight: 1.1,
-              fontWeight: 700,
-              margin: '14px 0 8px 0',
-              textShadow: '0 2px 6px rgba(0,0,0,0.8)',
-            }}
-          >
-            ¡Totalplayer en la Tómbola! 🕹️
-          </h2>
-          <p style={{ color: '#e2e8f0', fontSize: '13px', lineHeight: '1.5', margin: '0 0 16px 0' }}>
-            Tu brazalete quedó vinculado correctamente para el sorteo en vivo.
-          </p>
+          <div style={{ display: 'inline-flex', alignItems: 'center', gap: '8px', color: '#34d399', marginBottom: '8px' }}>
+            <CheckCircle2 size={24} />
+            <span style={{ fontFamily: 'monospace', fontWeight: 800, fontSize: '13px', letterSpacing: '1.5px' }}>
+              REGISTRO CONFIRMADO
+            </span>
+          </div>
+
+          <h1 style={{ margin: '0 0 14px 0', fontSize: '22px', fontWeight: 800, color: '#fde68a' }}>
+            ¡Ya estás dentro de la Tómbola!
+          </h1>
+
+          <div style={{ margin: '10px 0 16px 0' }}>
+            <AvatarPreview
+              color={boleto.skin?.color}
+              accesorio={boleto.skin?.accesorio}
+              expresion={boleto.skin?.expresion}
+              tamano={104}
+            />
+          </div>
 
           <div
             style={{
-              backgroundColor: 'rgba(16, 185, 129, 0.16)',
-              border: '2px dashed #34d399',
-              borderRadius: '14px',
-              padding: '10px',
-              marginBottom: '14px',
+              backgroundColor: 'rgba(2, 6, 23, 0.85)',
+              border: '1.5px solid rgba(251, 191, 36, 0.45)',
+              borderRadius: '18px',
+              padding: '16px',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '8px',
-              fontFamily: 'monospace',
-              fontSize: '18px',
-              fontWeight: 900,
-              color: '#6ee7b7',
-              letterSpacing: '2px'
+              flexDirection: 'column',
+              gap: '10px',
             }}
           >
-            <Ticket size={20} />
-            <span>BRAZALETE: {folioBrazalete.trim().toUpperCase()}</span>
+            <div>
+              <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#94a3b8' }}>COLABORADOR</div>
+              <div style={{ fontSize: '17px', fontWeight: 800, color: '#ffffff', marginTop: '2px' }}>
+                {boleto.nombre}
+              </div>
+            </div>
+
+            <div style={{ display: 'flex', justifyContent: 'space-around', borderTop: '1px solid rgba(148,163,184,0.2)', paddingTop: '10px' }}>
+              <div>
+                <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#94a3b8' }}>NO. EMPLEADO</div>
+                <div style={{ fontSize: '15px', fontWeight: 800, fontFamily: 'monospace', color: '#fbbf24' }}>
+                  {boleto.numero_empleado}
+                </div>
+              </div>
+              <div>
+                <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#94a3b8' }}>BRAZALETE</div>
+                <div style={{ fontSize: '15px', fontWeight: 800, fontFamily: 'monospace', color: '#34d399' }}>
+                  {boleto.folio_brazalete}
+                </div>
+              </div>
+            </div>
           </div>
 
-          <div
-            style={{
-              backgroundColor: 'rgba(2, 6, 23, 0.8)',
-              padding: '14px 16px',
-              borderRadius: '16px',
-              border: '1px solid rgba(52, 211, 153, 0.3)',
-              textAlign: 'left',
-              fontFamily: 'monospace',
-              fontSize: '13px',
-              lineHeight: '1.8',
-            }}
-          >
-            <div style={{ color: '#94a3b8' }}>
-              Participante: <strong style={{ color: '#ffffff' }}>{nombreCompleto}</strong>
-            </div>
-            <div style={{ color: '#94a3b8' }}>
-              No. Empleado: <strong style={{ color: '#fbbf24' }}>{numeroEmpleado.trim().toUpperCase()}</strong>
-            </div>
-          </div>
+          <p style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '16px', lineHeight: 1.45 }}>
+            Conserva tu brazalete físico puesto. Si tu personaje sale en la pantalla principal, preséntate con tu brazalete para reclamar tu premio.
+          </p>
         </div>
       </main>
     );
@@ -337,518 +292,271 @@ export default function RegistroQR() {
       style={{
         minHeight: '100dvh',
         width: '100%',
-        padding: '20px 16px 32px 16px',
-        boxSizing: 'border-box',
-        position: 'relative',
-        fontFamily: "'Poppins', 'Segoe UI', sans-serif",
+        background: 'radial-gradient(circle at top, #1e1014 0%, #070a12 75%, #03050a 100%)',
         color: '#ffffff',
-        userSelect: 'none',
+        fontFamily: "'Poppins', 'Segoe UI', sans-serif",
         display: 'flex',
         flexDirection: 'column',
-        justifyContent: 'space-between',
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: '18px 16px 34px 16px',
+        boxSizing: 'border-box',
       }}
     >
-      <picture
+      <form
+        onSubmit={handleSubmit}
         style={{
-          position: 'fixed',
-          top: 0,
-          left: 0,
-          width: '100vw',
-          height: '100dvh',
-          zIndex: 0,
-          pointerEvents: 'none',
+          width: '100%',
+          maxWidth: '420px',
+          backgroundColor: 'rgba(15, 23, 42, 0.92)',
+          border: '2px solid rgba(251, 191, 36, 0.7)',
+          borderRadius: '26px',
+          padding: '22px 20px',
+          boxShadow: '0 20px 50px rgba(0,0,0,0.85)',
+          display: 'flex',
+          flexDirection: 'column',
+          gap: '16px',
         }}
       >
-        <source media="(min-width: 960px)" srcSet={`${import.meta.env.BASE_URL}taller-santa.jpg`} />
-        <img
-          src={`${import.meta.env.BASE_URL}taller_cel.jpg`}
-          alt="Taller de Santa"
-          style={{
-            width: '100%',
-            height: '100%',
-            objectFit: 'cover',
-            objectPosition: 'center top',
-            display: 'block',
-          }}
-        />
-      </picture>
-
-      <style>
-        {`
-          @import url('https://fonts.googleapis.com/css2?family=Mountains+of+Christmas:wght@700&family=Poppins:wght@400;600;800&display=swap');
-
-          .escena-grid {
-            display: grid;
-            grid-template-columns: 1fr;
-            gap: 20px;
-            width: 100%;
-            max-width: 1280px;
-            margin: 0 auto;
-            align-items: center;
-            z-index: 10;
-          }
-
-          .zona-santa {
-            display: none;
-          }
-
-          @media (min-width: 960px) {
-            .escena-grid {
-              grid-template-columns: 1fr 1.15fr 1fr;
-              gap: 24px;
-            }
-            .zona-santa {
-              display: block;
-              min-height: 350px;
-            }
-          }
-
-          .input-navidad {
-            width: 100%;
-            box-sizing: border-box;
-            background-color: rgba(2, 6, 23, 0.85);
-            border: 2px solid rgba(251, 191, 36, 0.4);
-            border-radius: 14px;
-            padding: 10px 12px;
-            font-size: 15px;
-            color: #ffffff;
-            outline: none;
-            transition: border-color 0.2s;
-          }
-          .input-navidad:focus {
-            border-color: #fbbf24;
-          }
-        `}
-      </style>
-
-      <div
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'linear-gradient(180deg, rgba(10,15,28,0.45) 0%, rgba(10,15,28,0.25) 50%, rgba(10,15,28,0.75) 100%)',
-          pointerEvents: 'none',
-          zIndex: 1,
-        }}
-      />
-
-      <header style={{ textAlign: 'center', zIndex: 10, marginBottom: '12px' }}>
-        <h1
-          style={{
-            fontFamily: "'Mountains of Christmas', cursive, serif",
-            fontSize: 'clamp(34px, 5vw, 52px)',
-            fontWeight: 700,
-            color: '#fbbf24',
-            textShadow: '0 3px 10px rgba(220, 38, 38, 0.9), 0 2px 5px #000',
-            margin: 0,
-            lineHeight: 1.1,
-          }}
-        >
-          Personaliza tu Totalplayer
-        </h1>
-        <p
-          style={{
-            color: '#fef3c7',
-            fontSize: '14px',
-            margin: '4px 0 0 0',
-            textShadow: '0 2px 4px rgba(0,0,0,0.9)',
-            fontWeight: 600,
-          }}
-        >
-          Vincula tu brazalete y elige cómo te verás en la Tómbola
-        </p>
-      </header>
-
-      <form onSubmit={handleSubmit} style={{ width: '100%', zIndex: 10, display: 'flex', flexDirection: 'column', gap: '20px' }}>
-        <div className="escena-grid">
-          <div className="zona-santa" />
-
-          <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '14px' }}>
-            <div
-              style={{
-                width: '100%',
-                maxWidth: '380px',
-                backgroundColor: 'rgba(15, 23, 42, 0.72)',
-                backdropFilter: 'blur(8px)',
-                WebkitBackdropFilter: 'blur(8px)',
-                border: '2px solid rgba(251, 191, 36, 0.6)',
-                borderRadius: '26px',
-                padding: '14px',
-                textAlign: 'center',
-                boxShadow: '0 15px 35px rgba(0,0,0,0.75)',
-              }}
-            >
-              <span
-                style={{
-                  fontSize: '11px',
-                  fontFamily: 'monospace',
-                  color: '#fde68a',
-                  textTransform: 'uppercase',
-                  letterSpacing: '1.5px',
-                  display: 'block',
-                  marginBottom: '6px',
-                }}
-              >
-                ★ Vista Previa Totalplayer ★
-              </span>
-              <MonoPixelArt color={colorSkin} accesorio={accesorio} expresion={expresion} tamano={110} />
-            </div>
-
-            <div
-              style={{
-                width: '100%',
-                maxWidth: '380px',
-                backgroundColor: 'rgba(15, 23, 42, 0.85)',
-                backdropFilter: 'blur(12px)',
-                WebkitBackdropFilter: 'blur(12px)',
-                border: '2px solid rgba(251, 191, 36, 0.45)',
-                borderRadius: '24px',
-                padding: '16px',
-                boxShadow: '0 12px 30px rgba(0,0,0,0.75)',
-                display: 'flex',
-                flexDirection: 'column',
-                gap: '10px',
-              }}
-            >
-              {error && (
-                <div
-                  style={{
-                    padding: '10px',
-                    backgroundColor: 'rgba(225, 29, 72, 0.25)',
-                    border: '1px solid #fb7185',
-                    color: '#fecdd3',
-                    fontSize: '12px',
-                    borderRadius: '12px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '8px',
-                  }}
-                >
-                  <ShieldAlert size={18} style={{ flexShrink: 0 }} />
-                  <span>{error}</span>
-                </div>
-              )}
-
-              <div>
-                <label
-                  style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '11px',
-                    fontFamily: 'monospace',
-                    textTransform: 'uppercase',
-                    color: '#fde68a',
-                    marginBottom: '4px',
-                    fontWeight: 700,
-                  }}
-                >
-                  <User size={13} /> Nombre(s)
-                </label>
-                <input
-                  type="text"
-                  required
-                  autoComplete="given-name"
-                  placeholder="Ej. Juan Carlos"
-                  value={nombres}
-                  onChange={(e) => setNombres(e.target.value)}
-                  className="input-navidad"
-                />
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: '10px',
-                      fontFamily: 'monospace',
-                      textTransform: 'uppercase',
-                      color: '#fde68a',
-                      marginBottom: '4px',
-                      fontWeight: 700,
-                    }}
-                  >
-                    Apellido Paterno
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    autoComplete="family-name"
-                    placeholder="Ej. Pérez"
-                    value={apellidoPaterno}
-                    onChange={(e) => setApellidoPaterno(e.target.value)}
-                    className="input-navidad"
-                  />
-                </div>
-
-                <div>
-                  <label
-                    style={{
-                      display: 'block',
-                      fontSize: '10px',
-                      fontFamily: 'monospace',
-                      textTransform: 'uppercase',
-                      color: '#fde68a',
-                      marginBottom: '4px',
-                      fontWeight: 700,
-                    }}
-                  >
-                    Apellido Materno
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    placeholder="Ej. López"
-                    value={apellidoMaterno}
-                    onChange={(e) => setApellidoMaterno(e.target.value)}
-                    className="input-navidad"
-                  />
-                </div>
-              </div>
-
-              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-                <div>
-                  <label
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      fontSize: '10px',
-                      fontFamily: 'monospace',
-                      textTransform: 'uppercase',
-                      color: '#fde68a',
-                      marginBottom: '4px',
-                      fontWeight: 700,
-                    }}
-                  >
-                    <Hash size={12} /> No. Empleado
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    inputMode="numeric"
-                    autoComplete="off"
-                    placeholder="Ej. 10452391"
-                    value={numeroEmpleado}
-                    onChange={(e) => setNumeroEmpleado(e.target.value)}
-                    className="input-navidad"
-                    style={{ fontFamily: 'monospace' }}
-                  />
-                </div>
-
-                <div>
-                  <label
-                    style={{
-                      display: 'flex',
-                      alignItems: 'center',
-                      gap: '5px',
-                      fontSize: '10px',
-                      fontFamily: 'monospace',
-                      textTransform: 'uppercase',
-                      color: '#4ade80',
-                      marginBottom: '4px',
-                      fontWeight: 700,
-                    }}
-                  >
-                    <Ticket size={12} /> Folio Brazalete
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    autoComplete="off"
-                    placeholder="Ej. 0428"
-                    value={folioBrazalete}
-                    onChange={(e) => setFolioBrazalete(e.target.value)}
-                    className="input-navidad"
-                    style={{ fontFamily: 'monospace', borderColor: 'rgba(74, 222, 128, 0.5)' }}
-                  />
-                </div>
-              </div>
-            </div>
-          </div>
-
+        <div style={{ textAlign: 'center' }}>
           <div
             style={{
-              width: '100%',
-              maxWidth: '380px',
-              margin: '0 auto',
-              backgroundColor: 'rgba(15, 23, 42, 0.85)',
-              backdropFilter: 'blur(12px)',
-              WebkitBackdropFilter: 'blur(12px)',
-              border: '2px solid rgba(251, 191, 36, 0.55)',
-              borderRadius: '26px',
-              padding: '20px',
-              boxShadow: '0 15px 40px rgba(0,0,0,0.8)',
-              display: 'flex',
-              flexDirection: 'column',
-              gap: '18px',
+              display: 'inline-flex',
+              alignItems: 'center',
+              gap: '6px',
+              backgroundColor: 'rgba(251, 191, 36, 0.14)',
+              border: '1px solid rgba(251, 191, 36, 0.45)',
+              padding: '4px 12px',
+              borderRadius: '999px',
+              marginBottom: '6px',
             }}
           >
+            <Sparkles size={13} color="#fbbf24" />
+            <span style={{ fontFamily: 'monospace', fontSize: '11px', fontWeight: 800, color: '#fde68a' }}>
+              TÓMBOLA NAVIDEÑA RED CENTRAL
+            </span>
+          </div>
+          <h1 style={{ margin: 0, fontSize: '22px', fontWeight: 800, color: '#ffffff' }}>
+            Crea tu Personaje y Participa
+          </h1>
+          <p style={{ margin: '4px 0 0 0', fontSize: '12px', color: '#94a3b8' }}>
+            Solo ingresa tu número de empleado y el folio de tu brazalete.
+          </p>
+        </div>
+
+        {/* Vista previa y personalización del avatar */}
+        <div
+          style={{
+            backgroundColor: 'rgba(2, 6, 23, 0.75)',
+            border: '1px solid rgba(251, 191, 36, 0.3)',
+            borderRadius: '18px',
+            padding: '14px',
+            display: 'flex',
+            flexDirection: 'column',
+            gap: '12px',
+          }}
+        >
+          <AvatarPreview color={skin.color} accesorio={skin.accesorio} expresion={skin.expresion} tamano={88} />
+
+          <div>
+            <div style={{ fontSize: '11px', fontFamily: 'monospace', color: '#fde68a', marginBottom: '6px' }}>
+              COLOR DE PERSONAJE
+            </div>
+            <div style={{ display: 'flex', gap: '8px', justifyContent: 'center', flexWrap: 'wrap' }}>
+              {COLORES.map((c) => (
+                <button
+                  key={c.id}
+                  type="button"
+                  onClick={() => setSkin((s) => ({ ...s, color: c.id }))}
+                  style={{
+                    width: '30px',
+                    height: '30px',
+                    borderRadius: '50%',
+                    backgroundColor: c.id,
+                    border: skin.color === c.id ? '3px solid #fbbf24' : '2px solid #1e293b',
+                    transform: skin.color === c.id ? 'scale(1.15)' : 'scale(1)',
+                    cursor: 'pointer',
+                  }}
+                  title={c.nombre}
+                />
+              ))}
+            </div>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
             <div>
-              <label
+              <label style={{ display: 'block', fontSize: '10px', fontFamily: 'monospace', color: '#94a3b8', marginBottom: '4px' }}>
+                ACCESORIO
+              </label>
+              <select
+                value={skin.accesorio}
+                onChange={(e) => setSkin((s) => ({ ...s, accesorio: e.target.value }))}
                 style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontFamily: 'monospace',
-                  textTransform: 'uppercase',
-                  fontWeight: 800,
-                  color: '#fbbf24',
-                  marginBottom: '10px',
+                  width: '100%',
+                  backgroundColor: '#0f172a',
+                  color: '#ffffff',
+                  border: '1px solid rgba(251, 191, 36, 0.4)',
+                  borderRadius: '10px',
+                  padding: '8px',
+                  fontSize: '16px',
                 }}
               >
-                Selecciona un color para ti
-              </label>
-
-              <div style={{ display: 'flex', justifyContent: 'space-between', gap: '8px' }}>
-                {COLORES.map((c) => {
-                  const activo = colorSkin === c.hex;
-                  return (
-                    <button
-                      type="button"
-                      key={c.id}
-                      onClick={() => setColorSkin(c.hex)}
-                      aria-label={c.nombre}
-                      style={{
-                        backgroundColor: c.hex,
-                        width: '44px',
-                        height: '44px',
-                        minWidth: '44px',
-                        minHeight: '44px',
-                        borderRadius: '12px',
-                        border: activo ? '3px solid #fbbf24' : '2px solid rgba(255,255,255,0.2)',
-                        boxShadow: activo ? '0 0 14px rgba(251, 191, 36, 0.9)' : '0 4px 8px rgba(0,0,0,0.5)',
-                        cursor: 'pointer',
-                        padding: 0,
-                        flexShrink: 0,
-                      }}
-                    />
-                  );
-                })}
-              </div>
+                {ACCESORIOS.map((a) => (
+                  <option key={a.id} value={a.id}>{a.nombre}</option>
+                ))}
+              </select>
             </div>
 
             <div>
-              <label
+              <label style={{ display: 'block', fontSize: '10px', fontFamily: 'monospace', color: '#94a3b8', marginBottom: '4px' }}>
+                EXPRESIÓN
+              </label>
+              <select
+                value={skin.expresion}
+                onChange={(e) => setSkin((s) => ({ ...s, expresion: e.target.value }))}
                 style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontFamily: 'monospace',
-                  textTransform: 'uppercase',
-                  fontWeight: 800,
-                  color: '#fbbf24',
-                  marginBottom: '8px',
+                  width: '100%',
+                  backgroundColor: '#0f172a',
+                  color: '#ffffff',
+                  border: '1px solid rgba(251, 191, 36, 0.4)',
+                  borderRadius: '10px',
+                  padding: '8px',
+                  fontSize: '16px',
                 }}
               >
-                Selecciona un accesorio para lucir
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '8px' }}>
-                {ACCESORIOS.map((acc) => {
-                  const activo = accesorio === acc.id;
-                  return (
-                    <button
-                      type="button"
-                      key={acc.id}
-                      onClick={() => setAccesorio(acc.id)}
-                      style={{
-                        minHeight: '42px',
-                        padding: '8px 10px',
-                        borderRadius: '12px',
-                        border: activo ? '2px solid #fbbf24' : '1px solid rgba(255,255,255,0.12)',
-                        backgroundColor: activo ? 'rgba(245, 158, 11, 0.25)' : 'rgba(2, 6, 23, 0.75)',
-                        color: activo ? '#fef08a' : '#cbd5e1',
-                        fontWeight: activo ? 800 : 600,
-                        fontSize: '12px',
-                        fontFamily: 'monospace',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {acc.nombre}
-                    </button>
-                  );
-                })}
-              </div>
-            </div>
-
-            <div>
-              <label
-                style={{
-                  display: 'block',
-                  fontSize: '12px',
-                  fontFamily: 'monospace',
-                  textTransform: 'uppercase',
-                  fontWeight: 800,
-                  color: '#fbbf24',
-                  marginBottom: '8px',
-                }}
-              >
-                Muestra tu mejor Perfil
-              </label>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '8px' }}>
-                {EXPRESIONES.map((exp) => {
-                  const activo = expresion === exp.id;
-                  return (
-                    <button
-                      type="button"
-                      key={exp.id}
-                      onClick={() => setExpresion(exp.id)}
-                      style={{
-                        minHeight: '40px',
-                        padding: '8px 4px',
-                        borderRadius: '12px',
-                        border: activo ? '2px solid #4ade80' : '1px solid rgba(255,255,255,0.12)',
-                        backgroundColor: activo ? 'rgba(34, 197, 94, 0.25)' : 'rgba(2, 6, 23, 0.75)',
-                        color: activo ? '#bbf7d0' : '#cbd5e1',
-                        fontWeight: activo ? 800 : 600,
-                        fontSize: '12px',
-                        fontFamily: 'monospace',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      {exp.nombre}
-                    </button>
-                  );
-                })}
-              </div>
+                {EXPRESIONES.map((ex) => (
+                  <option key={ex.id} value={ex.id}>{ex.nombre}</option>
+                ))}
+              </select>
             </div>
           </div>
         </div>
 
-        <div style={{ width: '100%', maxWidth: '420px', margin: '4px auto 0 auto' }}>
-          <button
-            type="submit"
-            disabled={enviando || cargandoFp}
+        {/* Únicamente Número de Empleado y Folio de Brazalete */}
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+          <div>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontFamily: 'monospace',
+                color: '#fde68a',
+                fontWeight: 700,
+                marginBottom: '6px',
+              }}
+            >
+              <BadgeCheck size={15} color="#fbbf24" />
+              <span>NÚMERO DE EMPLEADO</span>
+            </label>
+            <input
+              type="text"
+              inputMode="numeric"
+              placeholder="Ej. 12345678"
+              value={numeroEmpleado}
+              onChange={(e) => setNumeroEmpleado(e.target.value)}
+              required
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                backgroundColor: 'rgba(2, 6, 23, 0.9)',
+                border: '2px solid rgba(251, 191, 36, 0.45)',
+                borderRadius: '14px',
+                padding: '12px 14px',
+                fontSize: '16px',
+                color: '#ffffff',
+                fontFamily: 'monospace',
+                outline: 'none',
+              }}
+            />
+          </div>
+
+          <div>
+            <label
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '6px',
+                fontSize: '12px',
+                fontFamily: 'monospace',
+                color: '#fde68a',
+                fontWeight: 700,
+                marginBottom: '6px',
+              }}
+            >
+              <Hash size={15} color="#34d399" />
+              <span>FOLIO DE BRAZALETE</span>
+            </label>
+            <input
+              type="text"
+              placeholder="Ej. RC-0142"
+              value={folioBrazalete}
+              onChange={(e) => setFolioBrazalete(e.target.value.toUpperCase())}
+              required
+              style={{
+                width: '100%',
+                boxSizing: 'border-box',
+                backgroundColor: 'rgba(2, 6, 23, 0.9)',
+                border: '2px solid rgba(52, 211, 153, 0.5)',
+                borderRadius: '14px',
+                padding: '12px 14px',
+                fontSize: '16px',
+                color: '#ffffff',
+                fontFamily: 'monospace',
+                textTransform: 'uppercase',
+                outline: 'none',
+              }}
+            />
+          </div>
+        </div>
+
+        {error && (
+          <div
             style={{
-              width: '100%',
-              minHeight: '54px',
-              padding: '14px 20px',
-              background: 'linear-gradient(90deg, #dc2626 0%, #e11d48 50%, #d97706 100%)',
-              border: '2px solid #fbbf24',
-              borderRadius: '18px',
-              color: '#ffffff',
-              fontFamily: 'monospace',
-              fontWeight: 900,
-              fontSize: '15px',
-              textTransform: 'uppercase',
-              letterSpacing: '1px',
-              boxShadow: '0 10px 30px rgba(220, 38, 38, 0.55)',
               display: 'flex',
-              alignItems: 'center',
-              justifyContent: 'center',
-              gap: '10px',
-              cursor: enviando || cargandoFp ? 'not-allowed' : 'pointer',
-              opacity: enviando || cargandoFp ? 0.6 : 1,
+              alignItems: 'flex-start',
+              gap: '8px',
+              backgroundColor: 'rgba(225, 29, 72, 0.22)',
+              border: '1.5px solid #fb7185',
+              color: '#fecdd3',
+              padding: '10px 12px',
+              borderRadius: '12px',
+              fontSize: '12px',
+              lineHeight: 1.4,
             }}
           >
-            {enviando ? (
-              <>
-                <Loader2 size={20} className="animate-spin" />
-                <span>Validando en padrón...</span>
-              </>
-            ) : (
-              '🎮 Meter Totalplayer a la Tómbola'
-            )}
-          </button>
-        </div>
+            <AlertCircle size={16} style={{ flexShrink: 0, marginTop: '2px' }} />
+            <span>{error}</span>
+          </div>
+        )}
+
+        <button
+          type="submit"
+          disabled={enviando}
+          style={{
+            width: '100%',
+            minHeight: '52px',
+            background: 'linear-gradient(90deg, #dc2626 0%, #e11d48 50%, #d97706 100%)',
+            border: '2px solid #fbbf24',
+            borderRadius: '16px',
+            color: '#ffffff',
+            fontFamily: 'monospace',
+            fontWeight: 900,
+            fontSize: '15px',
+            textTransform: 'uppercase',
+            letterSpacing: '1px',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            gap: '8px',
+            cursor: enviando ? 'not-allowed' : 'pointer',
+            opacity: enviando ? 0.65 : 1,
+          }}
+        >
+          <Ticket size={18} />
+          <span>{enviando ? 'Validando Padrón...' : 'Obtener mi Boleto'}</span>
+        </button>
       </form>
     </main>
   );

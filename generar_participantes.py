@@ -1,178 +1,87 @@
-import pyodbc
 import random
 import re
 import uuid
-import json
-from unidecode import unidecode
+from supabase import create_client, Client
 
-# 1. Configuración de conexión (Ajusta tus credenciales o usa Trusted_Connection)
-CONNECTION_STRING = (
-    "DRIVER={ODBC Driver 17 for SQL Server};"
-    "SERVER=localhost;"  # o localhost\SQLEXPRESS
-    "DATABASE=RifaDB;"
-    "Trusted_Connection=yes;"
-    "TrustServerCertificate=yes;"
-)
+# 1. Configura tus credenciales de Supabase (Settings > API)
+SUPABASE_URL = "https://TU_PROYECTO.supabase.co"
+# Usa la service_role key (solo en tu PC local, nunca en GitHub) para saltar RLS al insertar pruebas
+SUPABASE_SERVICE_KEY = "TU_SERVICE_ROLE_KEY"
 
-# 2. Catálogo de nombres y apellidos
-NOMBRES = [
-    "Juan", "Carlos", "Luis", "José", "Miguel", "Jesús", "Alejandro", "Manuel", 
-    "Francisco", "David", "Jorge", "Pedro", "Fernando", "Ricardo", "Eduardo", 
-    "Javier", "Roberto", "Daniel", "Mario", "Ángel", "Raúl", "Arturo", "Marco", 
-    "Rodrigo", "Gabriel", "Hugo", "Salvador", "Ignacio", "Alfonso", "Guillermo",
-    "María", "Guadalupe", "Ana", "Carmen", "Rosa", "Patricia", "Lucía", "Adriana", 
-    "Sofía", "Teresa", "Alejandra", "Verónica", "Gabriela", "Martha", "Elizabeth", 
-    "Claudia", "Laura", "Daniela", "Brenda", "Paola", "Mariana", "Fernanda", 
-    "Andrea", "Diana", "Karla", "Jessica", "Monica", "Silvia", "Erika", "Valeria"
-]
-
-APELLIDOS = [
-    "Hernández", "García", "Martínez", "López", "González", "Pérez", "Rodríguez", 
-    "Sánchez", "Ramírez", "Cruz", "Flores", "Gómez", "Morales", "Vázquez", "Jiménez", 
-    "Reyes", "Díaz", "Torres", "Gutiérrez", "Ruiz", "Mendoza", "Aguilar", "Ortiz", 
-    "Moreno", "Castillo", "Romero", "Álvarez", "Méndez", "Chávez", "Rivera", "Juárez", 
-    "Domínguez", "Herrera", "Medina", "Castro", "Vargas", "Guzmán", "Velázquez", 
-    "Ramos", "Salazar", "Rojas", "Ortega", "Guerrero", "Estrada", "Bautista", "Cortés", 
-    "Soto", "Alvarado", "Espinoza", "Lara", "Avila", "Rios", "Silva", "Delgado"
-]
-
-# 3. Catálogos para generación de Skins Pixel Art
 COLORES_SKIN = [
     "#e11d48",  # Rojo Carmesí
     "#16a34a",  # Verde Duende
     "#f59e0b",  # Dorado
     "#0284c7",  # Azul Hielo
     "#9333ea",  # Uva Navideña
-    "#f8fafc"   # Muñeco de Nieve
+    "#f8fafc",  # Muñeco de Nieve
 ]
 
 ACCESORIOS_SKIN = ["santa", "reno", "corona", "bufanda", "ninguno"]
 EXPRESIONES_SKIN = ["feliz", "cool", "tierno"]
 
-LEET_MAP = str.maketrans({'0': 'O', '1': 'I', '3': 'E', '4': 'A', '5': 'S', '7': 'T', '8': 'B'})
 
-def normalizar_para_comparacion(nombre: str) -> str:
-    texto = unidecode(nombre).upper()
-    texto = texto.translate(LEET_MAP)
-    texto = re.sub(r'[^A-Z\s]', '', texto)
-    palabras = sorted(texto.split())
-    return " ".join(palabras)
+def limpiar_codigo(valor: str) -> str:
+    return re.sub(r"[\s\-]", "", str(valor or "").strip()).upper()
 
-def normalizar_fonetico(nombre: str) -> str:
-    texto = normalizar_para_comparacion(nombre)
-    texto = texto.replace('H', '')
-    texto = texto.replace('V', 'B')
-    texto = texto.replace('Z', 'S').replace('C', 'S')
-    texto = texto.replace('LL', 'Y')
-    texto = texto.replace('J', 'G')
-    texto = texto.replace('K', 'Q')
-    texto = re.sub(r'(.)\1+', r'\1', texto)
-    return texto
 
-def reiniciar_tabla(cursor, conn):
-    """Vacía la tabla y reinicia el contador autoincremental (IDENTITY) a 0/1"""
-    try:
-        cursor.execute("TRUNCATE TABLE Participantes")
-        conn.commit()
-    except pyodbc.Error:
-        cursor.execute("DELETE FROM Participantes")
-        cursor.execute("DBCC CHECKIDENT ('Participantes', RESEED, 0)")
-        conn.commit()
-    print("[+] Base de datos vaciada y contador autoincremental reiniciado a 0.")
+def generar_datos_prueba(total: int = 30, limpiar_antes: bool = True):
+    print("[*] Conectando a Supabase...")
+    supabase: Client = create_client(SUPABASE_URL, SUPABASE_SERVICE_KEY)
 
-def generar_datos_prueba(total=800):
-    print("[*] Conectando a la base de datos SQL Server...")
-    conn = pyodbc.connect(CONNECTION_STRING)
-    cursor = conn.cursor()
+    if limpiar_antes:
+        print("[*] Limpiando tabla 'participantes'...")
+        supabase.table("participantes").delete().neq("id", 0).execute()
 
-    cursor.execute("SELECT COUNT(*) FROM Participantes")
-    conteo_actual = cursor.fetchone()[0]
+    # Obtener empleados reales y válidos desde padron_empleados
+    resp_padron = (
+        supabase.table("padron_empleados")
+        .select("numero_empleado, nombre, valido")
+        .eq("valido", "1")
+        .limit(max(total * 2, 100))
+        .execute()
+    )
 
-    if conteo_actual > 0:
-        print(f"[i] La tabla contiene actualmente {conteo_actual} registros.")
-        opcion = input("¿Deseas reiniciar la tabla y comenzar los IDs desde cero? (s/n): ").strip().lower()
-        if opcion == 's':
-            reiniciar_tabla(cursor, conn)
-    else:
-        cursor.execute("DBCC CHECKIDENT ('Participantes', RESEED, 0)")
-        conn.commit()
+    empleados_validos = resp_padron.data or []
+    if not empleados_validos:
+        print("[!] No se encontraron empleados con valido = '1' en padron_empleados.")
+        return
 
-    print(f"[*] Generando {total} participantes con skins personalizadas y números de empleado...")
+    seleccionados = random.sample(empleados_validos, min(total, len(empleados_validos)))
+    print(f"[*] Generando {len(seleccionados)} participantes de prueba desde el padrón oficial...")
 
     registros = []
-    empleados_generados = set()
+    for idx, emp in enumerate(seleccionados, start=1):
+        num_emp = limpiar_codigo(emp["numero_empleado"])
+        nombre_oficial = str(emp["nombre"]).strip()
+        folio_brazalete = f"RC{idx:04d}"
 
-    for _ in range(total):
-        # 1. Nombre completo
-        if random.random() > 0.4:
-            nombre = f"{random.choice(NOMBRES)} {random.choice(NOMBRES)}"
-        else:
-            nombre = random.choice(NOMBRES)
-
-        apellido1 = random.choice(APELLIDOS)
-        apellido2 = random.choice(APELLIDOS)
-        nombre_completo = f"{nombre} {apellido1} {apellido2}"
-
-        # 2. Número de empleado numérico único (8 a 10 dígitos)
-        while True:
-            longitud = random.choice([8, 9, 10])
-            primer_digito = str(random.randint(1, 9))
-            resto_digitos = "".join([str(random.randint(0, 9)) for _ in range(longitud - 1)])
-            num_empleado = primer_digito + resto_digitos
-
-            if num_empleado not in empleados_generados:
-                empleados_generados.add(num_empleado)
-                break
-
-        # 3. Metadatos simulados
-        device_hash = uuid.uuid4().hex[:16]
-        ip_simulada = f"192.168.1.{random.randint(10, 250)}"
-        norm = normalizar_para_comparacion(nombre_completo)
-        fon = normalizar_fonetico(nombre_completo)
-
-        # 4. Configuración aleatoria de Skin en formato JSON
         skin_dict = {
             "color": random.choice(COLORES_SKIN),
             "accesorio": random.choice(ACCESORIOS_SKIN),
-            "expresion": random.choice(EXPRESIONES_SKIN)
+            "expresion": random.choice(EXPRESIONES_SKIN),
         }
-        skin_json = json.dumps(skin_dict)
 
-        registros.append((
-            nombre_completo,
-            norm,
-            num_empleado,
-            device_hash,
-            ip_simulada,
-            fon,
-            1,          # EsValido
-            None,       # MotivoDescarte
-            0,          # YaGano
-            skin_json   # SkinConfig
-        ))
+        registros.append({
+            "nombre": nombre_oficial,
+            "nombre_normalizado": nombre_oficial.upper(),
+            "numero_empleado": num_emp,
+            "folio_brazalete": folio_brazalete,
+            "device_hash": f"test_{uuid.uuid4().hex[:12]}",
+            "skin": skin_dict,
+            "es_valido": True,
+            "ganador": False,
+            "descartado": False,
+        })
 
-    # Inserción masiva optimizada
-    print("[*] Guardando registros en SQL Server...")
-    cursor.fast_executemany = True
+    # Inserción en lotes hacia Supabase
+    supabase.table("participantes").insert(registros).execute()
 
-    sql_insert = """
-        INSERT INTO Participantes 
-        (NombreOriginal, NombreNormalizado, NumeroEmpleado, DeviceHash, IPAddress, CodigoFonetico, EsValido, MotivoDescarte, YaGano, SkinConfig)
-        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-    """
+    print(f"\n[OK] Se insertaron {len(registros)} participantes de prueba en Supabase.")
+    print("[i] Ejemplo de registros listos en la urna:")
+    for r in registros[:5]:
+        print(f"    - Emp: {r['numero_empleado']} | Folio: {r['folio_brazalete']} | {r['nombre']}")
 
-    cursor.executemany(sql_insert, registros)
-    conn.commit()
-
-    cursor.execute("SELECT MIN(Id), MAX(Id), COUNT(*) FROM Participantes WHERE EsValido = 1 AND YaGano = 0")
-    min_id, max_id, total_db = cursor.fetchone()
-
-    cursor.close()
-    conn.close()
-
-    print(f"\n[OK] Inserción completada con éxito.")
-    print(f"[i] Rango de IDs generados: {min_id} a {max_id}")
-    print(f"[i] Total de participantes listos con skins en la urna: {total_db}")
 
 if __name__ == "__main__":
-    generar_datos_prueba(5)
+    generar_datos_prueba(total=25, limpiar_antes=True)
